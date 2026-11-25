@@ -884,12 +884,12 @@ export class FamilySystem {
 
     const rx = playerPos.x - rightX * 1.15 - fwdX * 0.6;
     const rz = playerPos.z - rightZ * 1.15 - fwdZ * 0.6;
-    this.russianBlue.pos.set(rx, this.world.getWalkHeight(rx, rz), rz);
+    this.russianBlue.pos.set(rx, this.world.getWalkHeight(rx, rz, playerPos.y), rz);
     this.russianBlue.root.position.copy(this.russianBlue.pos);
 
     const mx = playerPos.x + rightX * 1.25 - fwdX * 0.6;
     const mz = playerPos.z + rightZ * 1.25 - fwdZ * 0.6;
-    this.maineCoon.pos.set(mx, this.world.getWalkHeight(mx, mz), mz);
+    this.maineCoon.pos.set(mx, this.world.getWalkHeight(mx, mz, playerPos.y), mz);
     this.maineCoon.root.position.copy(this.maineCoon.pos);
   }
 
@@ -910,7 +910,7 @@ export class FamilySystem {
       targetZ = playerPos.z + rightZ * sideSign * 1.25 - fwdZ * 0.68;
 
       // Russian Blue curiosity nudge toward nearby unsolved secrets!
-      if (!isMaine && this.secretTargets.length > 0) {
+      if (!isMaine && this.secretTargets.length > 0 && playerPos.y < 20) {
         for (const s of this.secretTargets) {
           if (s.isSolved && s.isSolved()) continue;
           const ds = Math.hypot(playerPos.x - s.x, playerPos.z - s.z);
@@ -926,10 +926,15 @@ export class FamilySystem {
       targetZ = this.campfirePos.z - 0.9;
     }
 
-    // Snap smoothly if Dengdeng teleported far away (> 28m)
+    // Snap smoothly if Dengdeng teleported far away (> 28m) or landed on an elevated Sky Island!
     const distToPlayer = Math.hypot(playerPos.x - cat.pos.x, playerPos.z - cat.pos.z);
-    if (this.catsFollowing && distToPlayer > 28) {
-      cat.pos.set(targetX, this.world.getWalkHeight(targetX, targetZ), targetZ);
+    const verticalGap = Math.abs(playerPos.y - cat.pos.y);
+    const targetFloorY = this.world.getWalkHeight(targetX, targetZ, playerPos.y);
+    if (
+      this.catsFollowing &&
+      (distToPlayer > 28 || (verticalGap > 12 && Math.abs(playerPos.y - targetFloorY) < 1.2))
+    ) {
+      cat.pos.set(targetX, targetFloorY, targetZ);
     }
 
     let moveSpeed = 0;
@@ -957,8 +962,13 @@ export class FamilySystem {
         const desiredSpeed = dist > 4.2 ? 5.6 : dist > 1.6 ? 3.1 : 1.75;
         moveSpeed = desiredSpeed;
         const step = Math.min(dist, desiredSpeed * dt);
-        cat.pos.x += (dx / dist) * step;
-        cat.pos.z += (dz / dist) * step;
+        const nextX = cat.pos.x + (dx / dist) * step;
+        const nextZ = cat.pos.z + (dz / dist) * step;
+        // Keep cats safely inside elevated sky island rim while high above ground
+        if (cat.pos.y <= 24 || this.world.getWalkHeight(nextX, nextZ, cat.pos.y) > 24) {
+          cat.pos.x = nextX;
+          cat.pos.z = nextZ;
+        }
         this.world.resolveCollisions(cat.pos, 0.24);
 
         const wantYaw = Math.atan2(dx, dz);
@@ -979,7 +989,7 @@ export class FamilySystem {
       }
     }
 
-    const groundY = this.world.getWalkHeight(cat.pos.x, cat.pos.z);
+    const groundY = this.world.getWalkHeight(cat.pos.x, cat.pos.z, cat.pos.y);
     cat.pos.y = THREE.MathUtils.lerp(cat.pos.y, groundY, Math.min(1, dt * 18));
     cat.root.position.set(cat.pos.x, cat.pos.y + cat.hopY, cat.pos.z);
     cat.root.rotation.y = cat.yaw;

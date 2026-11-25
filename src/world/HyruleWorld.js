@@ -179,7 +179,7 @@ export class HyruleWorld {
   getWalkHeight(x, z, currentY = undefined) {
     let best = Math.max(this.getTerrainHeight(x, z), this.waterLevel - 0.35);
     for (const s of this.walkSurfaces) {
-      if (s.minY !== undefined && currentY !== undefined && currentY < s.minY) continue;
+      if (s.minY !== undefined && (currentY === undefined || currentY < s.minY)) continue;
       if (Math.abs(x - s.x) <= s.rx && Math.abs(z - s.z) <= s.rz) {
         const sy = s.heightAt(x, z);
         if (sy > best) best = sy;
@@ -192,6 +192,7 @@ export class HyruleWorld {
     const py = pos.y ?? 0;
     for (const c of this.colliders) {
       if (c.maxY !== undefined && py > c.maxY) continue;
+      if (c.minY !== undefined && py < c.minY) continue;
       const dx = pos.x - c.x;
       const dz = pos.z - c.z;
       const d = Math.hypot(dx, dz) || 0.0001;
@@ -204,6 +205,7 @@ export class HyruleWorld {
 
     for (const b of this.boxColliders) {
       if (b.maxY !== undefined && py > b.maxY) continue;
+      if (b.minY !== undefined && py < b.minY) continue;
       const clampedX = THREE.MathUtils.clamp(pos.x, b.cx - b.hx, b.cx + b.hx);
       const clampedZ = THREE.MathUtils.clamp(pos.z, b.cz - b.hz, b.cz + b.hz);
       const dx = pos.x - clampedX;

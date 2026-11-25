@@ -8,6 +8,7 @@ import { FamilySystem } from './entities/FamilySystem.js';
 import { MonsterSystem } from './entities/MonsterSystem.js';
 import { ExpandedBiomes } from './world/ExpandedBiomes.js';
 import { PuzzleSystem } from './world/PuzzleSystem.js';
+import { SkyIslandSystem } from './world/SkyIslandSystem.js';
 
 class HyruleExplorationApp {
   constructor() {
@@ -51,7 +52,7 @@ class HyruleExplorationApp {
     const gpuName = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '' : '';
     const isSoftware = /swiftshader|llvmpipe|software/i.test(gpuName);
 
-    // World, Expanded Biomes, Puzzles, Family Homestead, Monsters & Martial Arts VFX
+    // World, Expanded Biomes, Puzzles, Sky Island, Family Homestead, Monsters & Martial Arts VFX
     this.paused = false;
     this.world = new HyruleWorld(this.scene, { isSoftware });
     this.combatEffects = new CombatEffects(this.scene);
@@ -61,6 +62,14 @@ class HyruleExplorationApp {
     this.puzzles = new PuzzleSystem(
       this.scene,
       this.world,
+      this.family,
+      this.combatEffects,
+      this.sound
+    );
+    this.sky = new SkyIslandSystem(
+      this.scene,
+      this.world,
+      this.puzzles,
       this.family,
       this.combatEffects,
       this.sound
@@ -80,6 +89,7 @@ class HyruleExplorationApp {
     this.velXZ = new THREE.Vector2(0, 0);
     this.velY = 0;
     this.grounded = true;
+    this.gliding = false;
     this.stepAccum = 0;
 
     // Smooth Damped Orbit Camera State + Subtle Combat Impulse
@@ -221,6 +231,12 @@ class HyruleExplorationApp {
         this.dengdeng.toggleSheathe();
       } else if (e.code === 'KeyF') {
         this._executeActiveInteraction();
+      } else if (e.code === 'Space') {
+        if (!this.grounded) {
+          this.setGliding(!this.gliding);
+        } else if (this.sky.getUpdraftAt(this.playerPos)) {
+          this.launchIntoUpdraft();
+        }
       }
     });
 
@@ -437,9 +453,12 @@ class HyruleExplorationApp {
       this.charYaw = this._lerpAngle(this.charYaw, camForwardYaw, Math.min(1, dt * 14.0));
     }
 
-    const maxSpeed = (sprinting && !combatMods.inCombat ? 5.5 : 2.25) * combatMods.moveMultiplier;
+    const maxSpeed = this.gliding
+      ? 6.8
+      : (sprinting && !combatMods.inCombat ? 5.5 : 2.25) * combatMods.moveMultiplier;
     let targetVx = 0;
     let targetVz = 0;
+    let glideBank = 0;
 
     if (mag > 0.01) {
       moveX /= mag;
@@ -448,8 +467,10 @@ class HyruleExplorationApp {
       targetVz = moveZ * maxSpeed;
 
       if (!(combatMods.lockFacingToCamera && this.camDist > 1.85)) {
-        const turnSpeed = combatMods.inCombat ? 7.5 : 10.5;
+        const turnSpeed = this.gliding ? 5.2 : combatMods.inCombat ? 7.5 : 10.5;
         const desiredYaw = Math.atan2(moveX, moveZ);
+        const yawDiff = this._wrapAngle(desiredYaw - this.charYaw);
+        glideBank = THREE.MathUtils.clamp(-yawDiff * 0.45, -0.34, 0.34);
         this.charYaw = this._lerpAngle(this.charYaw, desiredYaw, Math.min(1, dt * turnSpeed));
       }
 
@@ -464,13 +485,21 @@ class HyruleExplorationApp {
       }
     }
 
+    if (this.gliding) {
+      this.dengdeng.gliderRoll = THREE.MathUtils.lerp(
+        this.dengdeng.gliderRoll,
+        glideBank,
+        Math.min(1, dt * 8.0)
+      );
+    }
+
     // Add martial arts forward root-motion lunge along character facing direction!
     if (combatMods.lungeSpeed > 0) {
       targetVx += Math.sin(this.charYaw) * combatMods.lungeSpeed;
       targetVz += Math.cos(this.charYaw) * combatMods.lungeSpeed;
     }
 
-    const accel = combatMods.lungeSpeed > 0 ? 18.0 : mag > 0.01 ? 9.5 : 11.5;
+    const accel = combatMods.lungeSpeed > 0 ? 18.0 : this.gliding ? 5.5 : mag > 0.01 ? 9.5 : 11.5;
     this.velXZ.x = THREE.MathUtils.lerp(this.velXZ.x, targetVx, Math.min(1, dt * accel));
     this.velXZ.y = THREE.MathUtils.lerp(this.velXZ.y, targetVz, Math.min(1, dt * accel));
 
@@ -478,27 +507,57 @@ class HyruleExplorationApp {
     this.playerPos.z += this.velXZ.y * dt;
     this.world.resolveCollisions(this.playerPos, 0.38);
 
-    const groundY = this.world.getWalkHeight(this.playerPos.x, this.playerPos.z);
+    const groundY = this.world.getWalkHeight(this.playerPos.x, this.playerPos.z, this.playerPos.y);
 
     if (this.grounded && jumpPressed && this.dengdeng.combatState !== 'spin_charge') {
-      this.velY = 6.2;
-      this.grounded = false;
-      this.sound.footstep('grass');
+      if (this.sky.getUpdraftAt(this.playerPos)) {
+        this.launchIntoUpdraft();
+      } else {
+        this.velY = 6.2;
+        this.grounded = false;
+        this.sound.footstep('grass');
+      }
     }
 
     if (!this.grounded) {
-      const grav = 16.5 + combatMods.airDownwardBoost;
-      this.velY -= grav * dt;
+      if (this.dengdeng.combatState === 'jump_slash' && this.gliding) {
+        this.setGliding(false);
+      }
+
+      if (this.gliding) {
+        const updraft = this.sky.getUpdraftAt(this.playerPos);
+        if (updraft && this.playerPos.y < updraft.topY - 0.8) {
+          this.velY = THREE.MathUtils.lerp(this.velY, 9.8, Math.min(1, dt * 4.8));
+        } else {
+          this.velY = Math.max(this.velY - 6.8 * dt, -1.65);
+        }
+      } else {
+        const grav = 16.5 + combatMods.airDownwardBoost;
+        this.velY -= grav * dt;
+      }
+
       this.playerPos.y += this.velY * dt;
-      if (this.playerPos.y <= groundY) {
-        this.playerPos.y = groundY;
+      const newGroundY = this.world.getWalkHeight(
+        this.playerPos.x,
+        this.playerPos.z,
+        this.playerPos.y
+      );
+      if (this.playerPos.y <= newGroundY) {
+        this.playerPos.y = newGroundY;
         this.velY = 0;
         this.grounded = true;
+        if (this.gliding) this.setGliding(false);
         this.sound.footstep(this._detectSurface());
       }
     } else {
-      // Smooth terrain & arched wooden bridge following
-      this.playerPos.y = THREE.MathUtils.lerp(this.playerPos.y, groundY, Math.min(1, dt * 22));
+      if (this.gliding) this.setGliding(false);
+      // Smooth terrain, arched wooden bridge & sky-island following
+      if (groundY < this.playerPos.y - 1.5) {
+        // Walked off an elevated ledge/sky-island!
+        this.grounded = false;
+      } else {
+        this.playerPos.y = THREE.MathUtils.lerp(this.playerPos.y, groundY, Math.min(1, dt * 22));
+      }
     }
 
     const speed = this.velXZ.length();
@@ -527,7 +586,20 @@ class HyruleExplorationApp {
     };
   }
 
+  setGliding(active) {
+    if (active && this.grounded) return;
+    this.gliding = active;
+    this.dengdeng.setGliding(active, 0);
+  }
+
+  launchIntoUpdraft() {
+    this.grounded = false;
+    this.velY = 9.2;
+    this.setGliding(true);
+  }
+
   _detectSurface() {
+    if (this.playerPos.y > 28) return 'stone';
     const bx = this.world.getRoadX(-4);
     if (Math.abs(this.playerPos.x - bx) < 1.65 && Math.abs(this.playerPos.z + 4) < 8.4) {
       return 'wood';
@@ -546,7 +618,11 @@ class HyruleExplorationApp {
     let en = '';
     let zh = '';
 
-    if (Math.hypot(x - 32, z - 25) < 13.5) {
+    if (this.playerPos.y > 26 && Math.hypot(x, z + 16) < 13.5) {
+      region = 'sky_island';
+      en = 'CELESTIAL SAKURA SKY ISLAND';
+      zh = '云端誓言浮岛 · 双子山之巅';
+    } else if (Math.hypot(x - 32, z - 25) < 13.5) {
       region = 'cottage';
       en = 'STARLIGHT BLOSSOM COTTAGE';
       zh = '星光樱花木屋 · 我们的家';
@@ -581,6 +657,7 @@ class HyruleExplorationApp {
 
   _updateInteractionPrompt() {
     let inter =
+      this.sky.getNearestInteraction(this.playerPos) ||
       this.puzzles.getNearestInteraction(this.playerPos) ||
       this.biomes.getNearestInteraction(this.playerPos);
     if (!inter) {
@@ -588,6 +665,13 @@ class HyruleExplorationApp {
       if (inter && inter.type === 'cat' && this.monsters.fishTreats > 0) {
         inter.label = `[F] 撸${inter.cat.name} · 投喂小鱼干(余${this.monsters.fishTreats})`;
       }
+    }
+    if (!inter && this.grounded && this.sky.getUpdraftAt(this.playerPos)) {
+      inter = {
+        type: 'updraft_launch',
+        label: '[Space / F] 乘着黄金上升气流展翼飞往云端浮岛',
+        dist: 0,
+      };
     }
     this.activeInteraction = inter;
     if (this.interactPrompt) {
@@ -602,6 +686,15 @@ class HyruleExplorationApp {
 
   _executeActiveInteraction() {
     if (!this.activeInteraction) return;
+    if (this.activeInteraction.type === 'updraft_launch') {
+      this.launchIntoUpdraft();
+      return;
+    }
+    if (this.activeInteraction.type === 'sky_bell') {
+      const res = this.sky.triggerInteraction(this.activeInteraction);
+      if (res && res.text) this.showStoryToast(res.speaker, res.text, 5600);
+      return;
+    }
     if (
       this.activeInteraction.type === 'chime_clue' ||
       this.activeInteraction.type === 'chest_locked' ||
@@ -643,7 +736,11 @@ class HyruleExplorationApp {
     const fwdZ = Math.cos(this.charYaw);
 
     for (const ev of events) {
-      if (ev.type === 'sword_draw') {
+      if (ev.type === 'glider_open') {
+        this.sound.paragliderOpen();
+        this._fxPos.set(this.playerPos.x, this.playerPos.y + 1.75, this.playerPos.z);
+        this.combatEffects.spawnSparks(this._fxPos, '#ffe885', 14);
+      } else if (ev.type === 'sword_draw') {
         this.sound.swordDraw();
       } else if (ev.type === 'sheathe') {
         this.sound.swordSheathe();
@@ -770,9 +867,12 @@ class HyruleExplorationApp {
     let cy = this.camFocus.y + sinP * this.camDist;
     const cz = this.camFocus.z + Math.cos(this.camYaw) * cosP * this.camDist;
 
-    // Prevent camera from dipping underneath terrain or water
-    const minGroundY =
-      Math.max(this.world.getTerrainHeight(cx, cz), this.world.waterLevel) + 0.36;
+    // Prevent camera from dipping underneath terrain, water, or Sky Island deck
+    const surfaceFloor =
+      this.playerPos.y > 24
+        ? this.world.getWalkHeight(cx, cz, this.playerPos.y)
+        : Math.max(this.world.getTerrainHeight(cx, cz), this.world.waterLevel);
+    const minGroundY = surfaceFloor + 0.36;
     if (cy < minGroundY) cy = minGroundY;
 
     this.camera.position.set(cx, cy, cz);
@@ -794,8 +894,9 @@ class HyruleExplorationApp {
     }
   }
 
-  teleport(x, z, charYaw = this.charYaw) {
-    this.playerPos.set(x, this.world.getWalkHeight(x, z), z);
+  teleport(x, z, charYaw = this.charYaw, yHint = undefined) {
+    if (this.gliding) this.setGliding(false);
+    this.playerPos.set(x, this.world.getWalkHeight(x, z, yHint), z);
     this.velXZ.set(0, 0);
     this.velY = 0;
     this.grounded = true;
@@ -812,6 +913,7 @@ class HyruleExplorationApp {
     this._updateCamera(dt);
     this.world.update(dt, this.playerPos);
     this.biomes.update(dt);
+    this.sky.update(dt);
     this.family.update(dt, this.playerPos, this.charYaw);
     this.dengdeng.update(dt, locomotion, this.camera.position);
     this._processCombatEvents();

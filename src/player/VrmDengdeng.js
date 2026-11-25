@@ -121,6 +121,73 @@ function buildCurvedHylianShieldGeometry() {
   return shieldGeo;
 }
 
+function createStarlightGliderTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 256;
+  const ctx = c.getContext('2d');
+
+  // Deep royal twilight-sakura gradient across wing span
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0.0, '#303b82');
+  grad.addColorStop(0.55, '#59429c');
+  grad.addColorStop(1.0, '#c96f9d');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Golden filigree border & wing ribs
+  ctx.strokeStyle = '#ffe588';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(10, 10, 492, 236);
+
+  ctx.strokeStyle = 'rgba(255, 236, 162, 0.55)';
+  ctx.lineWidth = 3;
+  for (const rx of [128, 256, 384]) {
+    ctx.beginPath();
+    ctx.moveTo(256, 18);
+    ctx.lineTo(rx, 244);
+    ctx.stroke();
+  }
+
+  // Radiant 8-point Starlight Crest in center
+  ctx.fillStyle = '#fff09c';
+  ctx.beginPath();
+  for (let i = 0; i < 16; i++) {
+    const r = i % 2 === 0 ? 44 : 16;
+    const a = (i * Math.PI) / 8 - Math.PI / 2;
+    const px = 256 + Math.cos(a) * r;
+    const py = 122 + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Twin Cat-Paw Emblems (Emerald Russian Blue on Left, Warm Amber Maine Coon on Right!)
+  const drawPaw = (cx, cy, col) => {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(cx, cy + 8, 15, 0, Math.PI * 2);
+    ctx.fill();
+    for (const [ox, oy] of [
+      [-15, -10],
+      [-5, -16],
+      [5, -16],
+      [15, -10],
+    ]) {
+      ctx.beginPath();
+      ctx.arc(cx + ox, cy + oy, 6.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+  drawPaw(122, 128, '#6cf7b8');
+  drawPaw(390, 128, '#ffd166');
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 export class VrmDengdeng {
   constructor(scene) {
     this.scene = scene;
@@ -136,7 +203,7 @@ export class VrmDengdeng {
     this.lookTarget = new THREE.Object3D();
     this.scene.add(this.lookTarget);
 
-    // Dual-mount weapon & shield references
+    // Dual-mount weapon, shield & Starlight Paraglider references
     this.sheathedHiltGroup = null;
     this.backShieldMesh = null;
     this.handSwordGroup = null;
@@ -146,6 +213,11 @@ export class VrmDengdeng {
     this.bladeBaseMarker = new THREE.Object3D();
     this.bladeTipMarker = new THREE.Object3D();
     this.shieldFaceMarker = new THREE.Object3D();
+    this.gliderGroup = null;
+    this.gliderStreamers = [];
+    this.gliding = false;
+    this.gliderBlend = 0;
+    this.gliderRoll = 0;
 
     // Martial Arts Combat State
     this.swordDrawn = false;
@@ -536,6 +608,88 @@ export class VrmDengdeng {
       r2.position.set(-0.14, 0, 0);
       rForearm.add(r1, r2);
     }
+
+    // 5. Overhead Starlight & Twin-Paw Wing-Glider (`星羽滑翔翼`)
+    this.gliderGroup = new THREE.Group();
+    // Handlebar center sits right at raised hands (y = 1.72, z = 0.14 in character space)
+    this.gliderGroup.position.set(0, 1.72, 0.14);
+
+    const handleBar = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.62, 10), goldMat);
+    handleBar.rotation.z = Math.PI / 2;
+    this.gliderGroup.add(handleBar);
+
+    for (const sx of [-1, 1]) {
+      const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.012, 0.30, 8), goldMat);
+      strut.position.set(sx * 0.24, 0.14, -0.02);
+      strut.rotation.z = -sx * 0.12;
+      this.gliderGroup.add(strut);
+    }
+
+    // Cambered Swept-Wing Sail Geometry
+    const sailGeo = new THREE.PlaneGeometry(2.24, 0.94, 22, 8);
+    sailGeo.rotateX(-Math.PI / 2);
+    const sp = sailGeo.attributes.position;
+    for (let i = 0; i < sp.count; i++) {
+      const x = sp.getX(i);
+      const z = sp.getZ(i);
+      const nx = Math.abs(x) / 1.12;
+      const archY = Math.cos(nx * Math.PI * 0.48) * 0.14;
+      const sweepZ = -nx * nx * 0.28;
+      sp.setY(i, archY + (z > 0 ? -0.02 : 0.02));
+      sp.setZ(i, z + sweepZ);
+    }
+    sailGeo.computeVertexNormals();
+
+    const sailMat = new THREE.MeshStandardMaterial({
+      map: createStarlightGliderTexture(),
+      emissive: new THREE.Color(0x523c8f),
+      emissiveIntensity: 0.32,
+      roughness: 0.55,
+      side: THREE.DoubleSide,
+    });
+    const sailMesh = new THREE.Mesh(sailGeo, sailMat);
+    sailMesh.position.set(0, 0.27, -0.04);
+    sailMesh.castShadow = true;
+
+    const leadingSpar = new THREE.Mesh(
+      new THREE.TorusGeometry(1.14, 0.016, 8, 28, Math.PI * 0.92),
+      goldMat
+    );
+    leadingSpar.rotation.x = Math.PI * 0.44;
+    leadingSpar.rotation.z = Math.PI * 0.04;
+    leadingSpar.position.set(0, 0.22, -0.62);
+
+    this.gliderStreamers = [];
+    const streamerMat = new THREE.MeshBasicMaterial({
+      color: 0x8ef7ff,
+      transparent: true,
+      opacity: 0.78,
+      side: THREE.DoubleSide,
+    });
+    for (const sx of [-1, 1]) {
+      const st = new THREE.Mesh(new THREE.PlaneGeometry(0.055, 0.85, 1, 6), streamerMat);
+      st.rotation.x = Math.PI / 2;
+      st.position.set(sx * 1.04, 0.26, -0.74);
+      this.gliderGroup.add(st);
+      this.gliderStreamers.push({ mesh: st, sx });
+    }
+
+    this.gliderGroup.add(sailMesh, leadingSpar);
+    this.gliderGroup.visible = false;
+    this.vrm.scene.add(this.gliderGroup);
+  }
+
+  setGliding(active, roll = 0) {
+    if (active && !this.gliding) {
+      this.swordDrawn = false;
+      this.shieldDrawn = false;
+      this.shieldHolding = false;
+      this.combatState = 'none';
+      this._syncEquipmentVisibility();
+      this.pendingEvents.push({ type: 'glider_open' });
+    }
+    this.gliding = active;
+    this.gliderRoll = roll;
   }
 
   _syncEquipmentVisibility() {
@@ -579,6 +733,9 @@ export class VrmDengdeng {
   // --- Public Martial Arts Combat Triggers ---
 
   triggerSwordSlash(grounded = true) {
+    if (this.gliding) {
+      this.setGliding(false);
+    }
     this._drawWeapons({ withShield: this.shieldDrawn || this.shieldHolding });
 
     // Aerial Helm-Splitter Jump Slash!
@@ -1018,7 +1175,7 @@ export class VrmDengdeng {
 
   _applyMartialArtsPose(locomotion) {
     if (!this.vrm?.humanoid) return;
-    if (this.stanceBlend <= 0.002 && this.combatState === 'none') {
+    if (this.stanceBlend <= 0.002 && this.combatState === 'none' && this.gliderBlend <= 0.002) {
       this.vrm.scene.rotation.y = 0;
       return;
     }
@@ -1242,6 +1399,18 @@ export class VrmDengdeng {
       rUDir = [-0.68, -0.62, -0.38];
       rLDir = [-0.42, -0.35, 0.84];
       rBlade = [-0.25, 0.35, 0.90];
+    } else if (this.gliderBlend > 0.01 && this.combatState === 'none') {
+      // Overhead Starlight Wing-Glider Two-Handed Handlebar Grip!
+      rWeight = Math.max(rWeight, this.gliderBlend);
+      lWeight = Math.max(lWeight, this.gliderBlend);
+      torsoLeanX = 0.12 * this.gliderBlend;
+      torsoTiltZ = this.gliderRoll * 0.45 * this.gliderBlend;
+      rUDir = lerpVec3Arr(rUDir, [-0.30, 0.90, 0.31], this.gliderBlend);
+      rLDir = lerpVec3Arr(rLDir, [-0.10, 0.95, 0.29], this.gliderBlend);
+      rBlade = lerpVec3Arr(rBlade, [0.0, -0.29, 0.96], this.gliderBlend);
+      lUDir = lerpVec3Arr(lUDir, [0.30, 0.90, 0.31], this.gliderBlend);
+      lLDir = lerpVec3Arr(lLDir, [0.10, 0.95, 0.29], this.gliderBlend);
+      lDorsal = lerpVec3Arr(lDorsal, [0.0, -0.29, 0.96], this.gliderBlend);
     }
 
     // 1. Martial Stance Crouch & Grounded Leg Bracing when attacking from standstill
@@ -1281,7 +1450,7 @@ export class VrmDengdeng {
       this._curlHandFingers('right', rWeight * 0.92);
     }
 
-    // 4. Solve Left Arm + Left Hand (Hylian Shield / Martial Counter-Balance)
+    // 4. Solve Left Arm + Left Hand (Hylian Shield / Martial Counter-Balance / Glider Grip)
     if (lWeight > 0.005) {
       leftArmCharQuat(lUDir, lDorsal, _qTargetChar);
       this._blendBoneCharQuat('leftUpperArm', _qTargetChar, lWeight);
@@ -1292,7 +1461,7 @@ export class VrmDengdeng {
       leftArmCharQuat(lLDir, lDorsal, _qTargetChar);
       this._blendBoneCharQuat('leftHand', _qTargetChar, lWeight);
 
-      if (this.shieldDrawn) {
+      if (this.shieldDrawn || this.gliderBlend > 0.05) {
         this._curlHandFingers('left', lWeight * 0.85);
       }
     }
@@ -1301,11 +1470,30 @@ export class VrmDengdeng {
   update(dt, locomotion, cameraPos) {
     if (!this.ready || !this.vrm) return;
 
+    this.gliderBlend = THREE.MathUtils.lerp(
+      this.gliderBlend,
+      this.gliding ? 1.0 : 0.0,
+      Math.min(1, dt * 14.0)
+    );
+    if (this.gliderGroup) {
+      this.gliderGroup.visible = this.gliderBlend > 0.02;
+      if (this.gliderGroup.visible) {
+        const s = 0.25 + 0.75 * this.gliderBlend;
+        this.gliderGroup.scale.set(s, s, s);
+        this.gliderGroup.rotation.z = this.gliderRoll;
+        const now = performance.now() * 0.001;
+        for (const st of this.gliderStreamers) {
+          st.mesh.rotation.y = Math.sin(now * 9.5 + st.sx) * 0.22;
+          st.mesh.rotation.z = Math.cos(now * 7.2 + st.sx) * 0.14;
+        }
+      }
+    }
+
     this._advanceCombatTimers(dt, locomotion);
 
     // Choose base skeletal animation clip based on movement state
     if (!locomotion.grounded) {
-      if (locomotion.velY > 1.2 && this.actions.JumpUp) {
+      if (!this.gliding && locomotion.velY > 1.2 && this.actions.JumpUp) {
         this.playAction('JumpUp', 0.15);
       } else if (this.actions.Floating) {
         this.playAction('Floating', 0.22);
