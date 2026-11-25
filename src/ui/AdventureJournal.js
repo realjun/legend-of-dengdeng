@@ -56,6 +56,24 @@ const POSTCARD_DESTINATIONS = [
     yaw: Math.PI,
     cam: { yaw: 0.18, pitch: 0.14, dist: 4.9 },
   },
+  {
+    id: 'slalom',
+    name: '🏄 星环滑草坡道',
+    sub: '按 C 踩盾冲过 5 道星环赢鱼干',
+    x: 22.0,
+    z: 21.4,
+    yaw: Math.atan2(-3.6, -5.9),
+    cam: { yaw: Math.atan2(3.6, 5.9), pitch: 0.16, dist: 4.3 },
+  },
+  {
+    id: 'fountain',
+    name: '🪷 镜湖睡莲许愿泉',
+    sub: '踏过巨型发光睡莲 · 泉心许愿',
+    x: -18.2,
+    z: -2.2,
+    yaw: Math.PI,
+    cam: { yaw: 0.22, pitch: 0.16, dist: 4.4 },
+  },
 ];
 
 export class AdventureJournal {

@@ -219,6 +219,12 @@ export class VrmDengdeng {
     this.gliderBlend = 0;
     this.gliderRoll = 0;
 
+    // Hylian Shield-Surfing State (`海利亚盾牌滑草冲浪`)
+    this.surfShieldGroup = null;
+    this.shieldSurfing = false;
+    this.surfBlend = 0;
+    this.surfFlipTimer = 0;
+
     // Martial Arts Combat State
     this.swordDrawn = false;
     this.shieldDrawn = false;
@@ -677,10 +683,22 @@ export class VrmDengdeng {
     this.gliderGroup.add(sailMesh, leadingSpar);
     this.gliderGroup.visible = false;
     this.vrm.scene.add(this.gliderGroup);
+
+    // 6. Underfoot Hylian Surfboard Shield (`海利亚滑草盾`) mounted on root along travel heading
+    this.surfShieldGroup = new THREE.Group();
+    this.surfShieldGroup.position.set(0, 0.036, 0.02);
+    const surfMesh = new THREE.Mesh(buildCurvedHylianShieldGeometry(), shieldFrontMat);
+    surfMesh.rotation.x = Math.PI / 2 - 0.12;
+    surfMesh.scale.set(1.22, 1.32, 1.15);
+    surfMesh.castShadow = true;
+    this.surfShieldGroup.add(surfMesh);
+    this.surfShieldGroup.visible = false;
+    this.root.add(this.surfShieldGroup);
   }
 
   setGliding(active, roll = 0) {
     if (active && !this.gliding) {
+      if (this.shieldSurfing) this.setShieldSurfing(false);
       this.swordDrawn = false;
       this.shieldDrawn = false;
       this.shieldHolding = false;
@@ -692,11 +710,36 @@ export class VrmDengdeng {
     this.gliderRoll = roll;
   }
 
+  setShieldSurfing(active) {
+    if (active && !this.shieldSurfing) {
+      if (this.gliding) this.setGliding(false);
+      this.swordDrawn = false;
+      this.shieldDrawn = false;
+      this.shieldHolding = false;
+      this.combatState = 'none';
+      this.shieldSurfing = true;
+      this._syncEquipmentVisibility();
+      this.pendingEvents.push({ type: 'surf_start' });
+      return;
+    }
+    if (!active && this.shieldSurfing) {
+      this.shieldSurfing = false;
+      this.surfFlipTimer = 0;
+      this._syncEquipmentVisibility();
+    }
+  }
+
+  triggerSurfKickflip() {
+    if (!this.shieldSurfing) return;
+    this.surfFlipTimer = 0.48;
+  }
+
   _syncEquipmentVisibility() {
     if (this.handSwordGroup) this.handSwordGroup.visible = this.swordDrawn;
     if (this.sheathedHiltGroup) this.sheathedHiltGroup.visible = !this.swordDrawn;
-    if (this.armShieldGroup) this.armShieldGroup.visible = this.shieldDrawn;
-    if (this.backShieldMesh) this.backShieldMesh.visible = !this.shieldDrawn;
+    if (this.armShieldGroup) this.armShieldGroup.visible = this.shieldDrawn && !this.shieldSurfing;
+    if (this.backShieldMesh) this.backShieldMesh.visible = !this.shieldDrawn && !this.shieldSurfing;
+    if (this.surfShieldGroup) this.surfShieldGroup.visible = this.shieldSurfing;
   }
 
   _drawWeapons({ withShield = false } = {}) {
@@ -735,6 +778,9 @@ export class VrmDengdeng {
   triggerSwordSlash(grounded = true) {
     if (this.gliding) {
       this.setGliding(false);
+    }
+    if (this.shieldSurfing) {
+      this.setShieldSurfing(false);
     }
     this._drawWeapons({ withShield: this.shieldDrawn || this.shieldHolding });
 
@@ -1175,12 +1221,20 @@ export class VrmDengdeng {
 
   _applyMartialArtsPose(locomotion) {
     if (!this.vrm?.humanoid) return;
-    if (this.stanceBlend <= 0.002 && this.combatState === 'none' && this.gliderBlend <= 0.002) {
+    if (
+      this.stanceBlend <= 0.002 &&
+      this.combatState === 'none' &&
+      this.gliderBlend <= 0.002 &&
+      this.surfBlend <= 0.002
+    ) {
       this.vrm.scene.rotation.y = 0;
       return;
     }
 
-    this.vrm.scene.rotation.y = this.visualSpinYaw;
+    const flipAngle =
+      this.surfFlipTimer > 0 ? (1 - this.surfFlipTimer / 0.48) * Math.PI * 2 : 0;
+    this.vrm.scene.rotation.y =
+      this.combatState !== 'none' ? this.visualSpinYaw : 0.96 * this.surfBlend + flipAngle;
 
     const normRoot = this.vrm.humanoid.normalizedHumanBonesRoot;
     if (normRoot) {
@@ -1411,21 +1465,38 @@ export class VrmDengdeng {
       lUDir = lerpVec3Arr(lUDir, [0.30, 0.90, 0.31], this.gliderBlend);
       lLDir = lerpVec3Arr(lLDir, [0.10, 0.95, 0.29], this.gliderBlend);
       lDorsal = lerpVec3Arr(lDorsal, [0.0, -0.29, 0.96], this.gliderBlend);
+    } else if (this.surfBlend > 0.01 && this.combatState === 'none') {
+      // Iconic Hylian Shield-Surfer Sideways Balance Stance!
+      rWeight = Math.max(rWeight, this.surfBlend * 0.92);
+      lWeight = Math.max(lWeight, this.surfBlend * 0.92);
+      hipsSinkY = -0.10 * this.surfBlend;
+      torsoLeanX = 0.08 * this.surfBlend;
+      torsoTwistY = 0.28 * this.surfBlend;
+      // Left arm reaching forward along nose of shield, right arm trailing for balance
+      lUDir = lerpVec3Arr(lUDir, [0.78, 0.06, 0.62], this.surfBlend);
+      lLDir = lerpVec3Arr(lLDir, [0.88, 0.14, 0.45], this.surfBlend);
+      lDorsal = lerpVec3Arr(lDorsal, [0.12, 0.95, -0.28], this.surfBlend);
+      rUDir = lerpVec3Arr(rUDir, [-0.80, 0.12, -0.58], this.surfBlend);
+      rLDir = lerpVec3Arr(rLDir, [-0.88, 0.22, -0.42], this.surfBlend);
+      rBlade = lerpVec3Arr(rBlade, [-0.35, 0.90, 0.25], this.surfBlend);
     }
 
-    // 1. Martial Stance Crouch & Grounded Leg Bracing when attacking from standstill
+    // 1. Martial Stance Crouch & Shield-Surfer Knee Flex
     const hipsNode = this.vrm.humanoid.getNormalizedBoneNode('hips');
     if (hipsNode && Math.abs(hipsSinkY) > 0.001) {
       hipsNode.position.y += hipsSinkY * 0.42;
       hipsNode.updateMatrixWorld(false);
     }
 
-    if (locomotion.grounded && locomotion.speed < 0.8 && Math.abs(hipsSinkY) > 0.02) {
-      const stanceAmt = Math.min(1, Math.abs(hipsSinkY) / 0.08);
-      this._blendBoneAdditiveEuler('leftUpperLeg', 0.26, 0.14, 0.06, stanceAmt);
-      this._blendBoneAdditiveEuler('leftLowerLeg', -0.44, 0, 0, stanceAmt);
-      this._blendBoneAdditiveEuler('rightUpperLeg', -0.18, -0.16, -0.08, stanceAmt);
-      this._blendBoneAdditiveEuler('rightLowerLeg', -0.32, 0, 0, stanceAmt);
+    if (
+      this.surfBlend > 0.02 ||
+      (locomotion.grounded && locomotion.speed < 0.8 && Math.abs(hipsSinkY) > 0.02)
+    ) {
+      const stanceAmt = Math.max(this.surfBlend, Math.min(1, Math.abs(hipsSinkY) / 0.08));
+      this._blendBoneAdditiveEuler('leftUpperLeg', 0.30, 0.16, 0.08, stanceAmt);
+      this._blendBoneAdditiveEuler('leftLowerLeg', -0.52, 0, 0, stanceAmt);
+      this._blendBoneAdditiveEuler('rightUpperLeg', -0.20, -0.18, -0.08, stanceAmt);
+      this._blendBoneAdditiveEuler('rightLowerLeg', -0.42, 0, 0, stanceAmt);
     }
 
     // 2. Spine, Chest, UpperChest & Head Counter-Rotation (keeps eyes forward on target!)
@@ -1433,8 +1504,20 @@ export class VrmDengdeng {
     this._blendBoneAdditiveEuler('spine', torsoLeanX * 0.35, torsoTwistY * 0.30, torsoTiltZ * 0.3, torsoWeight);
     this._blendBoneAdditiveEuler('chest', torsoLeanX * 0.40, torsoTwistY * 0.40, torsoTiltZ * 0.4, torsoWeight);
     this._blendBoneAdditiveEuler('upperChest', torsoLeanX * 0.25, torsoTwistY * 0.30, torsoTiltZ * 0.3, torsoWeight);
-    this._blendBoneAdditiveEuler('neck', -torsoLeanX * 0.35, -torsoTwistY * 0.45, 0, torsoWeight);
-    this._blendBoneAdditiveEuler('head', -torsoLeanX * 0.30, -torsoTwistY * 0.35, 0, torsoWeight);
+    this._blendBoneAdditiveEuler(
+      'neck',
+      -torsoLeanX * 0.35,
+      -torsoTwistY * 0.45 - 0.46 * this.surfBlend,
+      0,
+      torsoWeight
+    );
+    this._blendBoneAdditiveEuler(
+      'head',
+      -torsoLeanX * 0.30,
+      -torsoTwistY * 0.35 - 0.38 * this.surfBlend,
+      0,
+      torsoWeight
+    );
 
     // 3. Solve Right Arm + Right Hand (Master Sword)
     if (rWeight > 0.005) {
@@ -1447,7 +1530,9 @@ export class VrmDengdeng {
       rightArmCharQuat(rLDir, rBlade, _qTargetChar);
       this._blendBoneCharQuat('rightHand', _qTargetChar, rWeight);
 
-      this._curlHandFingers('right', rWeight * 0.92);
+      if (this.swordDrawn || this.gliderBlend > 0.05) {
+        this._curlHandFingers('right', rWeight * 0.92);
+      }
     }
 
     // 4. Solve Left Arm + Left Hand (Hylian Shield / Martial Counter-Balance / Glider Grip)
@@ -1475,6 +1560,20 @@ export class VrmDengdeng {
       this.gliding ? 1.0 : 0.0,
       Math.min(1, dt * 14.0)
     );
+    this.surfBlend = THREE.MathUtils.lerp(
+      this.surfBlend,
+      this.shieldSurfing ? 1.0 : 0.0,
+      Math.min(1, dt * 14.0)
+    );
+    if (this.surfFlipTimer > 0) {
+      this.surfFlipTimer = Math.max(0, this.surfFlipTimer - dt);
+    }
+    if (this.surfShieldGroup && this.surfShieldGroup.visible) {
+      const flipSpin =
+        this.surfFlipTimer > 0 ? (1 - this.surfFlipTimer / 0.48) * Math.PI * 2 : 0;
+      this.surfShieldGroup.rotation.y = flipSpin;
+    }
+
     if (this.gliderGroup) {
       this.gliderGroup.visible = this.gliderBlend > 0.02;
       if (this.gliderGroup.visible) {
@@ -1492,7 +1591,9 @@ export class VrmDengdeng {
     this._advanceCombatTimers(dt, locomotion);
 
     // Choose base skeletal animation clip based on movement state
-    if (!locomotion.grounded) {
+    if (this.shieldSurfing) {
+      this.playAction('Idle', 0.18);
+    } else if (!locomotion.grounded) {
       if (!this.gliding && locomotion.velY > 1.2 && this.actions.JumpUp) {
         this.playAction('JumpUp', 0.15);
       } else if (this.actions.Floating) {
@@ -1508,13 +1609,16 @@ export class VrmDengdeng {
       this.playAction('Idle', 0.28);
     }
 
-    // Natural eye blinking & spirited martial expression during active strikes
+    // Natural eye blinking & spirited martial / joyful surfing expression
     this.blinkTimer -= dt;
     if (this.vrm.expressionManager) {
       const fierce =
         this.combatState !== 'none' && this.combatState !== 'spin_charge' ? 1.0 : 0.0;
       this.vrm.expressionManager.setValue('relaxed', fierce > 0.5 ? 0.0 : 0.22);
-      this.vrm.expressionManager.setValue('happy', fierce > 0.5 ? 0.0 : 0.12);
+      this.vrm.expressionManager.setValue(
+        'happy',
+        fierce > 0.5 ? 0.0 : this.shieldSurfing ? 0.58 : 0.12
+      );
       this.vrm.expressionManager.setValue('aa', fierce * 0.22);
 
       if (this.blinkTimer <= 0) {
