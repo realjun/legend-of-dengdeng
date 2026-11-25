@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><polygon points='16,2 8,16 24,16' fill='%23efd070'/><polygon points='8,16 0,30 16,30' fill='%23efd070'/><polygon points='24,16 16,30 32,30' fill='%23efd070'/></svg>" />
+    <title>塞尔达传说 · 海拉鲁原野漫步 — 登登</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="hyrule-canvas"></canvas>
+
+    <!-- Minimalist Breath-of-the-Wild Loading Veil -->
+    <div id="loading-veil">
+      <div class="veil-inner">
+        <div class="veil-emblem" aria-hidden="true">
+          <svg viewBox="0 0 64 56" width="44" height="38">
+            <polygon points="32,4 18,28 46,28" fill="#e8cfa0" />
+            <polygon points="18,28 4,52 32,52" fill="#e8cfa0" />
+            <polygon points="46,28 32,52 60,52" fill="#e8cfa0" />
+          </svg>
+        </div>
+        <div class="veil-title">THE LEGEND OF DENGDENG</div>
+        <div class="veil-sub" id="loading-label">正在唤醒海拉鲁原野与英杰登登…</div>
+        <div class="veil-bar-track">
+          <div class="veil-bar-fill" id="loading-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Poetic Breath-of-the-Wild Region Discovery Whisper (auto-fades) -->
+    <div id="region-whisper" class="hidden" aria-live="polite">
+      <div class="whisper-en" id="whisper-en">HYRULE FIELD</div>
+      <div class="whisper-zh" id="whisper-zh">海拉鲁原野 · 静谧镜湖</div>
+      <div class="whisper-rule"></div>
+    </div>
+
+    <!-- Feather-Light Atmosphere & Framing Pill (Top-Right, unobtrusive) -->
+    <div id="atmosphere-bar">
+      <button class="atmo-btn" data-mood="dawn" title="晨曦微光">晨曦</button>
+      <button class="atmo-btn active" data-mood="day" title="海拉鲁晴昼">晴昼</button>
+      <button class="atmo-btn" data-mood="sunset" title="黄昏暖霞">黄昏</button>
+      <button class="atmo-btn" data-mood="night" title="静谧星夜">星夜</button>
+      <span class="atmo-sep"></span>
+      <button class="atmo-btn" id="btn-portrait" title="切换英杰登登近景写真视角">近景写真</button>
+      <button class="atmo-btn" id="btn-vista" title="切换海拉鲁原野远景漫步视角">原野远景</button>
+    </div>
+
+    <!-- Subtle Bottom-Center Locomotion Whisper -->
+    <div id="walk-hint">
+      WASD 漫步 · Shift 奔跑 · Space 跳跃 · 鼠标拖拽环视 · 滚轮缩放镜头
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

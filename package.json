@@ -1,0 +1,22 @@
+{
+  "name": "legend-of-dengdeng",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/prepare-assets.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/prepare-assets.mjs",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "pngjs": "^7.0.0",
+    "vite": "^8.3.6"
+  },
+  "dependencies": {
+    "@pixiv/three-vrm": "^3.6.0",
+    "@pixiv/three-vrm-animation": "^3.6.0",
+    "three": "^0.187.0"
+  }
+}

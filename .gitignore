@@ -1,0 +1,21 @@
+# Logs & Dependencies
+logs
+*.log
+npm-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+
+# Auto-generated 3D assets cache & output (rebuilt via scripts/prepare-assets.mjs)
+.asset-cache
+public/models
+public/animations
+public/draco
+
+# Strictly exclude any personal reference photos
+photo-*.jpg
+photo-*.jpeg
+photo-*.png
+*.jpg
+*.jpeg
