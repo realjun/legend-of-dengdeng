@@ -7,6 +7,7 @@ import { CombatEffects } from './effects/CombatEffects.js';
 import { FamilySystem } from './entities/FamilySystem.js';
 import { MonsterSystem } from './entities/MonsterSystem.js';
 import { ExpandedBiomes } from './world/ExpandedBiomes.js';
+import { PuzzleSystem } from './world/PuzzleSystem.js';
 
 class HyruleExplorationApp {
   constructor() {
@@ -50,13 +51,23 @@ class HyruleExplorationApp {
     const gpuName = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '' : '';
     const isSoftware = /swiftshader|llvmpipe|software/i.test(gpuName);
 
-    // World, Expanded Biomes, Family Homestead, Monsters & Martial Arts VFX
+    // World, Expanded Biomes, Puzzles, Family Homestead, Monsters & Martial Arts VFX
     this.paused = false;
     this.world = new HyruleWorld(this.scene, { isSoftware });
     this.combatEffects = new CombatEffects(this.scene);
     this.family = new FamilySystem(this.scene, this.world);
     this.monsters = new MonsterSystem(this.scene, this.world, this.combatEffects, this.sound);
     this.biomes = new ExpandedBiomes(this.scene, this.world, this.family, this.monsters);
+    this.puzzles = new PuzzleSystem(
+      this.scene,
+      this.world,
+      this.family,
+      this.combatEffects,
+      this.sound
+    );
+    this.puzzles.onStarCollected = (_count, _total, chest) => {
+      if (chest.id === 'maze_chest') this.biomes._mazeChestOpened = true;
+    };
     this.dengdeng = new VrmDengdeng(this.scene);
 
     // Spawn at Scenic Awakening Overlook along the Flagstone Trail
@@ -569,7 +580,9 @@ class HyruleExplorationApp {
   }
 
   _updateInteractionPrompt() {
-    let inter = this.biomes.getNearestInteraction(this.playerPos);
+    let inter =
+      this.puzzles.getNearestInteraction(this.playerPos) ||
+      this.biomes.getNearestInteraction(this.playerPos);
     if (!inter) {
       inter = this.family.getNearestInteraction(this.playerPos);
       if (inter && inter.type === 'cat' && this.monsters.fishTreats > 0) {
@@ -589,6 +602,15 @@ class HyruleExplorationApp {
 
   _executeActiveInteraction() {
     if (!this.activeInteraction) return;
+    if (
+      this.activeInteraction.type === 'chime_clue' ||
+      this.activeInteraction.type === 'chest_locked' ||
+      this.activeInteraction.type === 'chest_open'
+    ) {
+      const res = this.puzzles.triggerInteraction(this.activeInteraction);
+      if (res && res.text) this.showStoryToast(res.speaker, res.text, 5600);
+      return;
+    }
     if (this.activeInteraction.type === 'maze_treat') {
       const res = this.biomes.triggerInteraction(this.activeInteraction, this.sound, this.monsters);
       if (res && res.text) this.showStoryToast(res.speaker, res.text);
@@ -794,6 +816,7 @@ class HyruleExplorationApp {
     this.dengdeng.update(dt, locomotion, this.camera.position);
     this._processCombatEvents();
     this.monsters.update(dt, this.playerPos, this.charYaw, this.dengdeng, this.family, this.velXZ);
+    this.puzzles.update(dt, this.playerPos, this.charYaw, this.dengdeng, this.monsters.defeatedCount);
     this._updateInteractionPrompt();
 
     const mods = this.dengdeng.getCombatLocomotionModifiers();
