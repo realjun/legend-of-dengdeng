@@ -75,8 +75,9 @@ export class HyruleWorld {
     this.scene.add(this.worldGroup);
 
     this.waterLevel = -0.35;
-    this.walkSurfaces = []; // Bridges & stone dais surfaces: { x, z, rx, rz, archFn }
+    this.walkSurfaces = []; // Bridges, dais & sky-island surfaces: { x, z, rx, rz, minY?, heightAt }
     this.colliders = []; // Cylindrical trunks/columns/boulders: { x, z, r }
+    this.boxColliders = []; // Axis-aligned hedge/wall boxes: { cx, cz, hx, hz }
 
     this.sharedUniforms = {
       uTime: { value: 0 },
@@ -149,6 +150,20 @@ export class HyruleWorld {
       h = THREE.MathUtils.lerp(h, 4.65, Math.min(1, t * t * 1.15));
     }
 
+    // Whispering Starlight Hedge Labyrinth Plateau around (-40, -34)
+    const dMaze = Math.max(Math.abs(x + 40), Math.abs(z + 34));
+    if (dMaze < 19.5) {
+      const blend = 1.0 - THREE.MathUtils.smoothstep(dMaze, 13.5, 19.5);
+      h = THREE.MathUtils.lerp(h, 3.85, blend);
+    }
+
+    // Bioluminescent Mushroom Glen Hollow around (54, -18)
+    const dGlen = Math.hypot(x - 54, z + 18);
+    if (dGlen < 21.0) {
+      const t = Math.cos((dGlen / 21.0) * Math.PI * 0.5);
+      h = THREE.MathUtils.lerp(h, 2.95, Math.min(1, t * t * 1.1));
+    }
+
     // Gentle outer rolling foothills (never blocking the vast BotW sky & distant peaks!)
     const r = Math.hypot(x, z);
     if (r > 95) {
@@ -161,9 +176,10 @@ export class HyruleWorld {
     return h;
   }
 
-  getWalkHeight(x, z) {
+  getWalkHeight(x, z, currentY = undefined) {
     let best = Math.max(this.getTerrainHeight(x, z), this.waterLevel - 0.35);
     for (const s of this.walkSurfaces) {
+      if (s.minY !== undefined && currentY !== undefined && currentY < s.minY) continue;
       if (Math.abs(x - s.x) <= s.rx && Math.abs(z - s.z) <= s.rz) {
         const sy = s.heightAt(x, z);
         if (sy > best) best = sy;
@@ -173,7 +189,9 @@ export class HyruleWorld {
   }
 
   resolveCollisions(pos, radius = 0.38) {
+    const py = pos.y ?? 0;
     for (const c of this.colliders) {
+      if (c.maxY !== undefined && py > c.maxY) continue;
       const dx = pos.x - c.x;
       const dz = pos.z - c.z;
       const d = Math.hypot(dx, dz) || 0.0001;
@@ -183,6 +201,31 @@ export class HyruleWorld {
         pos.z = c.z + (dz / d) * minD;
       }
     }
+
+    for (const b of this.boxColliders) {
+      if (b.maxY !== undefined && py > b.maxY) continue;
+      const clampedX = THREE.MathUtils.clamp(pos.x, b.cx - b.hx, b.cx + b.hx);
+      const clampedZ = THREE.MathUtils.clamp(pos.z, b.cz - b.hz, b.cz + b.hz);
+      const dx = pos.x - clampedX;
+      const dz = pos.z - clampedZ;
+      const dSq = dx * dx + dz * dz;
+      if (dSq < radius * radius) {
+        if (dSq > 1e-6) {
+          const d = Math.sqrt(dSq);
+          pos.x = clampedX + (dx / d) * radius;
+          pos.z = clampedZ + (dz / d) * radius;
+        } else {
+          const penX = b.hx + radius - Math.abs(pos.x - b.cx);
+          const penZ = b.hz + radius - Math.abs(pos.z - b.cz);
+          if (penX < penZ) {
+            pos.x = b.cx + (pos.x >= b.cx ? b.hx + radius : -(b.hx + radius));
+          } else {
+            pos.z = b.cz + (pos.z >= b.cz ? b.hz + radius : -(b.hz + radius));
+          }
+        }
+      }
+    }
+
     pos.x = THREE.MathUtils.clamp(pos.x, -145, 145);
     pos.z = THREE.MathUtils.clamp(pos.z, -145, 145);
   }
@@ -849,9 +892,11 @@ export class HyruleWorld {
       const rx = this.getRoadX(gz);
       if (Math.abs(gx - rx) < 1.35 + Math.random() * 0.65) continue;
 
-      // Leave stone sanctuary dais & Starlight Cottage courtyard clear
+      // Leave stone sanctuary dais, Starlight Cottage courtyard, & Hedge Labyrinth clear
       if (Math.hypot(gx - 24, gz + 34) < 4.5) continue;
       if (Math.hypot(gx - 34, gz - 26) < 7.2) continue;
+      if (Math.abs(gx + 40) < 13.5 && Math.abs(gz + 34) < 13.5) continue;
+      if (Math.hypot(gx - 54, gz + 18) < 4.2) continue;
 
       dummy.position.set(gx, gy - 0.02, gz);
       dummy.rotation.y = Math.random() * Math.PI * 2;

@@ -6,6 +6,7 @@ import { SoundEngine } from './audio/SoundEngine.js';
 import { CombatEffects } from './effects/CombatEffects.js';
 import { FamilySystem } from './entities/FamilySystem.js';
 import { MonsterSystem } from './entities/MonsterSystem.js';
+import { ExpandedBiomes } from './world/ExpandedBiomes.js';
 
 class HyruleExplorationApp {
   constructor() {
@@ -49,12 +50,13 @@ class HyruleExplorationApp {
     const gpuName = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '' : '';
     const isSoftware = /swiftshader|llvmpipe|software/i.test(gpuName);
 
-    // World, Character, Family Homestead, Monsters & Martial Arts VFX
+    // World, Expanded Biomes, Family Homestead, Monsters & Martial Arts VFX
     this.paused = false;
     this.world = new HyruleWorld(this.scene, { isSoftware });
     this.combatEffects = new CombatEffects(this.scene);
     this.family = new FamilySystem(this.scene, this.world);
     this.monsters = new MonsterSystem(this.scene, this.world, this.combatEffects, this.sound);
+    this.biomes = new ExpandedBiomes(this.scene, this.world, this.family, this.monsters);
     this.dengdeng = new VrmDengdeng(this.scene);
 
     // Spawn at Scenic Awakening Overlook along the Flagstone Trail
@@ -537,6 +539,14 @@ class HyruleExplorationApp {
       region = 'cottage';
       en = 'STARLIGHT BLOSSOM COTTAGE';
       zh = '星光樱花木屋 · 我们的家';
+    } else if (Math.max(Math.abs(x + 40), Math.abs(z + 34)) < 14.5) {
+      region = 'maze';
+      en = 'STARLIGHT HEDGE LABYRINTH';
+      zh = '星语树篱迷宫';
+    } else if (Math.hypot(x - 54, z + 18) < 15.5) {
+      region = 'glen';
+      en = 'LUMINOUS MUSHROOM GLEN';
+      zh = '奇幻荧光蘑菇秘境';
     } else if (Math.hypot(x - 24, z + 34) < 14) {
       region = 'ginkgo';
       en = 'GOLDEN GINKGO SANCTUARY';
@@ -559,9 +569,12 @@ class HyruleExplorationApp {
   }
 
   _updateInteractionPrompt() {
-    const inter = this.family.getNearestInteraction(this.playerPos);
-    if (inter && inter.type === 'cat' && this.monsters.fishTreats > 0) {
-      inter.label = `[F] 撸${inter.cat.name} · 投喂小鱼干(余${this.monsters.fishTreats})`;
+    let inter = this.biomes.getNearestInteraction(this.playerPos);
+    if (!inter) {
+      inter = this.family.getNearestInteraction(this.playerPos);
+      if (inter && inter.type === 'cat' && this.monsters.fishTreats > 0) {
+        inter.label = `[F] 撸${inter.cat.name} · 投喂小鱼干(余${this.monsters.fishTreats})`;
+      }
     }
     this.activeInteraction = inter;
     if (this.interactPrompt) {
@@ -576,6 +589,11 @@ class HyruleExplorationApp {
 
   _executeActiveInteraction() {
     if (!this.activeInteraction) return;
+    if (this.activeInteraction.type === 'maze_treat') {
+      const res = this.biomes.triggerInteraction(this.activeInteraction, this.sound, this.monsters);
+      if (res && res.text) this.showStoryToast(res.speaker, res.text);
+      return;
+    }
     const feedingTreat =
       this.activeInteraction.type === 'cat' && this.monsters.fishTreats > 0;
     const res = this.family.triggerInteraction(this.activeInteraction, this.sound);
@@ -771,6 +789,7 @@ class HyruleExplorationApp {
     const locomotion = this._updateLocomotion(dt);
     this._updateCamera(dt);
     this.world.update(dt, this.playerPos);
+    this.biomes.update(dt);
     this.family.update(dt, this.playerPos, this.charYaw);
     this.dengdeng.update(dt, locomotion, this.camera.position);
     this._processCombatEvents();
