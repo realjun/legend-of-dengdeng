@@ -102,9 +102,60 @@ export class SoundEngine {
     }
   }
 
-  swordSwing(combo = 0) {
-    this.playNoise(0.14, 0.22, 1300 + combo * 320);
-    this.playTone(260 + combo * 55, 0.12, 'triangle', 0.12, 0, 130);
+  swordDraw() {
+    this.playNoise(0.11, 0.12, 3400);
+    this.playTone(980, 0.18, 'sine', 0.12, 0, 1960);
+    this.playTone(1480, 0.22, 'triangle', 0.08, 0.03, 2480);
+  }
+
+  swordSheathe() {
+    this.playNoise(0.07, 0.09, 1900);
+    this.playTone(720, 0.11, 'triangle', 0.11, 0, 340);
+    this.playTone(420, 0.08, 'sine', 0.10, 0.06, 260);
+  }
+
+  swordSwing(combo = 0, onGrass = false) {
+    const isFinisher = combo >= 2;
+    this.playNoise(isFinisher ? 0.22 : 0.15, isFinisher ? 0.28 : 0.21, 1180 + combo * 340);
+    this.playTone(250 + combo * 55, isFinisher ? 0.19 : 0.13, 'triangle', 0.14, 0, 115);
+    // Subtle Master Sword steel harmonic shimmer
+    this.playTone(920 + combo * 160, isFinisher ? 0.24 : 0.12, 'sine', isFinisher ? 0.09 : 0.045, 0.02, 620);
+    if (onGrass) {
+      this.playNoise(0.13, 0.11, 2950);
+    }
+  }
+
+  spinChargeReady() {
+    this.playTone(587.33, 0.22, 'sine', 0.15, 0);
+    this.playTone(880.0, 0.26, 'sine', 0.17, 0.05);
+    this.playTone(1174.66, 0.36, 'triangle', 0.16, 0.10);
+  }
+
+  spinAttackRelease() {
+    this.playNoise(0.36, 0.34, 1450);
+    this.playTone(330, 0.32, 'sawtooth', 0.12, 0, 130);
+    this.playTone(587.33, 0.38, 'triangle', 0.16, 0.02, 880);
+    this.playTone(1174.66, 0.44, 'sine', 0.14, 0.06, 1567.98);
+  }
+
+  jumpSlashSlam() {
+    this.playNoise(0.26, 0.32, 480);
+    this.playTone(165, 0.28, 'triangle', 0.24, 0, 52);
+    this.playTone(880, 0.22, 'sine', 0.11, 0.02, 440);
+  }
+
+  shieldRaise() {
+    this.playNoise(0.08, 0.11, 1250);
+    this.playTone(310, 0.09, 'triangle', 0.12, 0, 420);
+    this.playTone(620, 0.08, 'sine', 0.07, 0.02, 540);
+  }
+
+  shieldParry() {
+    // Iconic BotW Hylian Shield metallic parry ring & shockwave snap!
+    this.playNoise(0.16, 0.26, 2100);
+    this.playTone(440, 0.14, 'sawtooth', 0.15, 0, 220);
+    this.playTone(1046.5, 0.38, 'sine', 0.22, 0.01, 1318.5);
+    this.playTone(1567.98, 0.46, 'sine', 0.18, 0.035, 2093.0);
   }
 
   swordHit(crit = false) {

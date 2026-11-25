@@ -87,6 +87,7 @@ export class HyruleWorld {
       uSunGlowColor: { value: new THREE.Color('#ffe1a8') },
       uFogStrength: { value: 0.0046 },
       uPlayerPos: { value: new THREE.Vector3() },
+      uSlashWave: { value: new THREE.Vector4(0, 0, 0, 0) },
     };
 
     this._setupLighting();
@@ -999,9 +1000,18 @@ export class HyruleWorld {
     }
   }
 
+  triggerGrassWave(x, z, radius = 2.6, strength = 0.85) {
+    this.sharedUniforms.uSlashWave.value.set(x, z, radius, strength);
+  }
+
   update(dt, playerPos) {
     this.sharedUniforms.uTime.value += dt;
     this.sharedUniforms.uPlayerPos.value.copy(playerPos);
+    const sw = this.sharedUniforms.uSlashWave.value;
+    if (sw.w > 0.001) {
+      sw.z += dt * 2.4;
+      sw.w = Math.max(0, sw.w - dt * 2.1);
+    }
     this.skyDome.position.copy(playerPos);
 
     // Keep shadow frustum tightly centered on Champion Dengdeng for razor-sharp shadows!

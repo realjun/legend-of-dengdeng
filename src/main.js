@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { HyruleWorld } from './world/HyruleWorld.js';
 import { VrmDengdeng } from './player/VrmDengdeng.js';
 import { SoundEngine } from './audio/SoundEngine.js';
+import { CombatEffects } from './effects/CombatEffects.js';
 
 class HyruleExplorationApp {
   constructor() {
@@ -42,10 +43,11 @@ class HyruleExplorationApp {
     const gpuName = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '' : '';
     const isSoftware = /swiftshader|llvmpipe|software/i.test(gpuName);
 
-    // World & Character
+    // World, Character & Martial Arts VFX
     this.paused = false;
     this.world = new HyruleWorld(this.scene, { isSoftware });
     this.dengdeng = new VrmDengdeng(this.scene);
+    this.combatEffects = new CombatEffects(this.scene);
 
     // Spawn at Scenic Awakening Overlook along the Flagstone Trail
     const startZ = 21.5;
@@ -59,7 +61,7 @@ class HyruleExplorationApp {
     this.grounded = true;
     this.stepAccum = 0;
 
-    // Smooth Damped Orbit Camera State
+    // Smooth Damped Orbit Camera State + Subtle Combat Impulse
     this.camTargetYaw = 0.06;
     this.camTargetPitch = 0.14;
     this.camTargetDist = 3.35;
@@ -68,13 +70,23 @@ class HyruleExplorationApp {
     this.camPitch = this.camTargetPitch;
     this.camDist = this.camTargetDist;
     this.camFocus = new THREE.Vector3(startX, startY + 1.28, startZ);
+    this.camImpulse = new THREE.Vector3();
 
     // Input State
     this.keys = new Set();
     this.simInput = null;
     this.isDragging = false;
+    this.rightMouseHeld = false;
+    this.pointerTravel = 0;
+    this.pointerDownTime = 0;
+    this.jHoldTimer = 0;
     this.lastPointer = { x: 0, y: 0 };
     this.hasMovedOnce = false;
+
+    this._bladeBase = new THREE.Vector3();
+    this._bladeTip = new THREE.Vector3();
+    this._fxPos = new THREE.Vector3();
+    this._fxNormal = new THREE.Vector3();
 
     // Region Discovery Tracking
     this.currentRegion = '';
@@ -157,23 +169,58 @@ class HyruleExplorationApp {
 
     window.addEventListener('keydown', (e) => {
       unlockAudio();
-      this.keys.add(e.code);
       if (e.code === 'Space') e.preventDefault();
+      const firstPress = !this.keys.has(e.code) && !e.repeat;
+      this.keys.add(e.code);
+
+      if (!this.ready || !firstPress) return;
+      if (e.code === 'KeyJ') {
+        this.jHoldTimer = 0.001;
+        this.dengdeng.triggerSwordSlash(this.grounded);
+      } else if (e.code === 'KeyK') {
+        this.dengdeng.setShieldGuard(true);
+      } else if (e.code === 'KeyE' || e.code === 'KeyL') {
+        this.dengdeng.triggerShieldParry(this.grounded);
+      } else if (e.code === 'KeyR') {
+        this.dengdeng.toggleSheathe();
+      }
     });
 
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code);
+      if (e.code === 'KeyJ') {
+        this.jHoldTimer = 0;
+        this.dengdeng.releaseSpinCharge(this.grounded);
+      } else if (e.code === 'KeyK') {
+        if (!this.rightMouseHeld) {
+          this.dengdeng.setShieldGuard(false);
+        }
+      }
     });
 
     window.addEventListener('blur', () => {
       this.keys.clear();
       this.isDragging = false;
+      this.rightMouseHeld = false;
+      this.jHoldTimer = 0;
+      this.dengdeng.releaseSpinCharge(this.grounded);
+      this.dengdeng.setShieldGuard(false);
     });
 
-    // Smooth Click-Drag & Touch Orbit on Canvas
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // Smooth Click-Drag Orbit + Quick Left-Click Sword Slash + Right-Click Hold Shield Guard
     this.canvas.addEventListener('pointerdown', (e) => {
       unlockAudio();
+      if (e.button === 2) {
+        this.rightMouseHeld = true;
+        if (this.ready) this.dengdeng.setShieldGuard(true);
+        return;
+      }
+      if (e.button !== 0) return;
       this.isDragging = true;
+      this.pointerTravel = 0;
+      this.pointerDownTime = performance.now();
       this.lastPointer.x = e.clientX;
       this.lastPointer.y = e.clientY;
       this.canvas.setPointerCapture?.(e.pointerId);
@@ -185,6 +232,7 @@ class HyruleExplorationApp {
       const dy = e.clientY - this.lastPointer.y;
       this.lastPointer.x = e.clientX;
       this.lastPointer.y = e.clientY;
+      this.pointerTravel += Math.hypot(dx, dy);
 
       this.camTargetYaw -= dx * 0.0055;
       this.camTargetPitch = THREE.MathUtils.clamp(
@@ -195,8 +243,21 @@ class HyruleExplorationApp {
     });
 
     window.addEventListener('pointerup', (e) => {
-      this.isDragging = false;
-      this.canvas.releasePointerCapture?.(e.pointerId);
+      if (e.button === 2) {
+        this.rightMouseHeld = false;
+        if (!this.keys.has('KeyK')) {
+          this.dengdeng.setShieldGuard(false);
+        }
+        return;
+      }
+      if (e.button === 0 && this.isDragging) {
+        const elapsed = performance.now() - this.pointerDownTime;
+        if (this.ready && this.pointerTravel < 7 && elapsed < 320) {
+          this.dengdeng.triggerSwordSlash(this.grounded);
+        }
+        this.isDragging = false;
+        this.canvas.releasePointerCapture?.(e.pointerId);
+      }
     });
 
     // Scroll Wheel Zoom (from 0.90m Portrait Close-up to 7.8m Sweeping Vista)
@@ -263,6 +324,19 @@ class HyruleExplorationApp {
   }
 
   _updateLocomotion(dt) {
+    // Hold-J transition into coiled Spin Attack Charge
+    if (this.keys.has('KeyJ') && this.jHoldTimer > 0) {
+      this.jHoldTimer += dt;
+      if (
+        this.grounded &&
+        this.jHoldTimer >= 0.34 &&
+        (this.dengdeng.combatState === 'none' ||
+          (this.dengdeng.combatState === 'slash1' && this.dengdeng.combatTime >= 0.29))
+      ) {
+        this.dengdeng.startSpinCharge(this.grounded);
+      }
+    }
+
     // Optional keyboard arrow camera orbit support
     if (this.keys.has('ArrowLeft')) this.camTargetYaw += dt * 1.65;
     if (this.keys.has('ArrowRight')) this.camTargetYaw -= dt * 1.65;
@@ -290,6 +364,8 @@ class HyruleExplorationApp {
       jumpPressed = this.simInput.jump ?? jumpPressed;
     }
 
+    const combatMods = this.dengdeng.getCombatLocomotionModifiers();
+
     // Movement vector relative to camera horizontal look direction
     const camFwdX = -Math.sin(this.camYaw);
     const camFwdZ = -Math.cos(this.camYaw);
@@ -300,7 +376,13 @@ class HyruleExplorationApp {
     let moveZ = camFwdZ * fwd + camRightZ * right;
     const mag = Math.hypot(moveX, moveZ);
 
-    const maxSpeed = sprinting ? 5.5 : 2.25;
+    // Z-Target Camera Lock when holding Shield Guard in exploration view (enables martial strafing!)
+    if (combatMods.lockFacingToCamera && this.camDist > 1.85) {
+      const camForwardYaw = Math.atan2(camFwdX, camFwdZ);
+      this.charYaw = this._lerpAngle(this.charYaw, camForwardYaw, Math.min(1, dt * 14.0));
+    }
+
+    const maxSpeed = (sprinting && !combatMods.inCombat ? 5.5 : 2.25) * combatMods.moveMultiplier;
     let targetVx = 0;
     let targetVz = 0;
 
@@ -310,21 +392,30 @@ class HyruleExplorationApp {
       targetVx = moveX * maxSpeed;
       targetVz = moveZ * maxSpeed;
 
-      const desiredYaw = Math.atan2(moveX, moveZ);
-      this.charYaw = this._lerpAngle(this.charYaw, desiredYaw, Math.min(1, dt * 10.5));
+      if (!(combatMods.lockFacingToCamera && this.camDist > 1.85)) {
+        const turnSpeed = combatMods.inCombat ? 7.5 : 10.5;
+        const desiredYaw = Math.atan2(moveX, moveZ);
+        this.charYaw = this._lerpAngle(this.charYaw, desiredYaw, Math.min(1, dt * turnSpeed));
+      }
 
       // Subtle gentle camera follow when walking laterally without dragging mouse
-      if (!this.isDragging && Math.abs(right) > 0.2 && fwd >= 0) {
+      if (!this.isDragging && !combatMods.inCombat && Math.abs(right) > 0.2 && fwd >= 0) {
         this.camTargetYaw -= right * dt * 0.42;
       }
 
       if (!this.hasMovedOnce) {
         this.hasMovedOnce = true;
-        setTimeout(() => this.walkHint?.classList.add('dimmed'), 3500);
+        setTimeout(() => this.walkHint?.classList.add('dimmed'), 5000);
       }
     }
 
-    const accel = mag > 0.01 ? 9.5 : 11.5;
+    // Add martial arts forward root-motion lunge along character facing direction!
+    if (combatMods.lungeSpeed > 0) {
+      targetVx += Math.sin(this.charYaw) * combatMods.lungeSpeed;
+      targetVz += Math.cos(this.charYaw) * combatMods.lungeSpeed;
+    }
+
+    const accel = combatMods.lungeSpeed > 0 ? 18.0 : mag > 0.01 ? 9.5 : 11.5;
     this.velXZ.x = THREE.MathUtils.lerp(this.velXZ.x, targetVx, Math.min(1, dt * accel));
     this.velXZ.y = THREE.MathUtils.lerp(this.velXZ.y, targetVz, Math.min(1, dt * accel));
 
@@ -334,14 +425,15 @@ class HyruleExplorationApp {
 
     const groundY = this.world.getWalkHeight(this.playerPos.x, this.playerPos.z);
 
-    if (this.grounded && jumpPressed) {
+    if (this.grounded && jumpPressed && this.dengdeng.combatState !== 'spin_charge') {
       this.velY = 6.2;
       this.grounded = false;
       this.sound.footstep('grass');
     }
 
     if (!this.grounded) {
-      this.velY -= 16.5 * dt;
+      const grav = 16.5 + combatMods.airDownwardBoost;
+      this.velY -= grav * dt;
       this.playerPos.y += this.velY * dt;
       if (this.playerPos.y <= groundY) {
         this.playerPos.y = groundY;
@@ -357,7 +449,7 @@ class HyruleExplorationApp {
     const speed = this.velXZ.length();
 
     // Soft organic footstep cadence
-    if (this.grounded && speed > 0.35) {
+    if (this.grounded && speed > 0.35 && combatMods.lungeSpeed === 0) {
       this.stepAccum += speed * dt;
       const stride = speed > 3.8 ? 1.85 : 1.32;
       if (this.stepAccum >= stride) {
@@ -374,7 +466,7 @@ class HyruleExplorationApp {
     this._checkLandmarkDiscovery();
 
     return {
-      speed,
+      speed: combatMods.lungeSpeed > 0 ? speed * 0.35 : speed,
       grounded: this.grounded,
       velY: this.velY,
     };
@@ -420,20 +512,126 @@ class HyruleExplorationApp {
     }
   }
 
+  _processCombatEvents() {
+    const events = this.dengdeng.consumeEvents();
+    if (events.length === 0) return;
+
+    const surface = this._detectSurface();
+    const fwdX = Math.sin(this.charYaw);
+    const fwdZ = Math.cos(this.charYaw);
+
+    for (const ev of events) {
+      if (ev.type === 'sword_draw') {
+        this.sound.swordDraw();
+      } else if (ev.type === 'sheathe') {
+        this.sound.swordSheathe();
+      } else if (ev.type === 'shield_raise') {
+        this.sound.shieldRaise();
+      } else if (ev.type === 'sword_swing') {
+        this.sound.swordSwing(ev.combo, surface === 'grass' && this.grounded);
+        this.combatEffects.resetTrailContinuity();
+      } else if (ev.type === 'slash_wave') {
+        const sx = this.playerPos.x + fwdX * 1.05;
+        const sz = this.playerPos.z + fwdZ * 1.05;
+        this.world.triggerGrassWave(sx, sz, ev.radius, ev.strength);
+        this._fxPos.set(sx, this.playerPos.y + 0.08, sz);
+
+        if (surface === 'grass' && this.grounded) {
+          this.combatEffects.spawnGrassClippings(this._fxPos, ev.finisher ? 20 : 10);
+        } else if (surface === 'stone') {
+          this.combatEffects.spawnSparks(this._fxPos, '#ffe484', ev.finisher ? 12 : 6);
+        }
+
+        if (ev.finisher) {
+          this.combatEffects.spawnShockwave(this._fxPos, {
+            color: '#88f2ff',
+            startScale: 0.45,
+            endScale: 2.35,
+            duration: 0.34,
+          });
+          this.camImpulse.set(fwdX * 0.032, -0.022, fwdZ * 0.032);
+        }
+      } else if (ev.type === 'charge_ready') {
+        this.sound.spinChargeReady();
+        if (this.dengdeng.getBladeWorldSegment(this._bladeBase, this._bladeTip)) {
+          this.combatEffects.spawnSparks(this._bladeTip, '#ffe97d', 16);
+        }
+      } else if (ev.type === 'spin_release') {
+        this.sound.spinAttackRelease();
+        this.combatEffects.resetTrailContinuity();
+      } else if (ev.type === 'spin_wave') {
+        this.world.triggerGrassWave(this.playerPos.x, this.playerPos.z, ev.radius, ev.strength);
+        this._fxPos.set(this.playerPos.x, this.playerPos.y + 0.12, this.playerPos.z);
+        this.combatEffects.spawnShockwave(this._fxPos, {
+          color: '#ffe680',
+          startScale: 0.72,
+          endScale: 3.85,
+          duration: 0.44,
+        });
+        if (surface === 'grass') {
+          this.combatEffects.spawnGrassClippings(this.playerPos, 28);
+        } else {
+          this.combatEffects.spawnSparks(this._fxPos, '#ffe680', 20);
+        }
+        this.camImpulse.set(0, 0.038, 0);
+      } else if (ev.type === 'jump_slam') {
+        this.sound.jumpSlashSlam();
+        const sx = this.playerPos.x + fwdX * 0.85;
+        const sz = this.playerPos.z + fwdZ * 0.85;
+        this.world.triggerGrassWave(sx, sz, 3.5, 1.25);
+        this._fxPos.set(sx, this.playerPos.y + 0.08, sz);
+        this.combatEffects.spawnShockwave(this._fxPos, {
+          color: '#ffdf78',
+          startScale: 0.45,
+          endScale: 3.25,
+          duration: 0.40,
+        });
+        if (surface === 'grass') {
+          this.combatEffects.spawnGrassClippings(this._fxPos, 22);
+        } else {
+          this.combatEffects.spawnSparks(this._fxPos, '#ffe680', 18);
+        }
+        this.camImpulse.set(0, -0.055, 0);
+      } else if (ev.type === 'parry_impact') {
+        this.sound.shieldParry();
+        if (!this.dengdeng.getShieldWorldCenter(this._fxPos)) {
+          this._fxPos.set(
+            this.playerPos.x + fwdX * 0.45,
+            this.playerPos.y + 1.18,
+            this.playerPos.z + fwdZ * 0.45
+          );
+        }
+        this._fxNormal.set(fwdX, 0.08, fwdZ).normalize();
+        this.combatEffects.spawnShockwave(this._fxPos, {
+          color: '#8af6ff',
+          startScale: 0.16,
+          endScale: 1.38,
+          duration: 0.30,
+          normal: this._fxNormal,
+        });
+        this.combatEffects.spawnSparks(this._fxPos, '#fff099', 16);
+        this.world.triggerGrassWave(this._fxPos.x, this._fxPos.z, 2.7, 0.92);
+        this.camImpulse.set(-fwdX * 0.03, 0.018, -fwdZ * 0.03);
+      }
+    }
+  }
+
   _updateCamera(dt) {
     const smooth = Math.min(1, dt * 10.0);
     this.camYaw = this._lerpAngle(this.camYaw, this.camTargetYaw, smooth);
     this.camPitch = THREE.MathUtils.lerp(this.camPitch, this.camTargetPitch, smooth);
     this.camDist = THREE.MathUtils.lerp(this.camDist, this.camTargetDist, smooth);
 
+    this.camImpulse.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, dt * 14.0));
+
     // Raise focus smoothly from upper-torso (1.24m) at vista distance to face/eyes (1.41m) in close-up portrait!
     const closeT = 1.0 - THREE.MathUtils.smoothstep(this.camDist, 1.05, 2.6);
     const focusHeight = THREE.MathUtils.lerp(1.24, 1.41, closeT);
 
     const desiredFocus = new THREE.Vector3(
-      this.playerPos.x,
-      this.playerPos.y + focusHeight,
-      this.playerPos.z
+      this.playerPos.x + this.camImpulse.x,
+      this.playerPos.y + focusHeight + this.camImpulse.y,
+      this.playerPos.z + this.camImpulse.z
     );
     this.camFocus.lerp(desiredFocus, Math.min(1, dt * 16.0));
 
@@ -484,6 +682,21 @@ class HyruleExplorationApp {
     this._updateCamera(dt);
     this.world.update(dt, this.playerPos);
     this.dengdeng.update(dt, locomotion, this.camera.position);
+    this._processCombatEvents();
+
+    const mods = this.dengdeng.getCombatLocomotionModifiers();
+    if (this.dengdeng.getBladeWorldSegment(this._bladeBase, this._bladeTip)) {
+      this.combatEffects.pushBladeSample(
+        this._bladeBase,
+        this._bladeTip,
+        mods.trailActive,
+        mods.trailGolden
+      );
+    } else {
+      this.combatEffects.resetTrailContinuity();
+    }
+    this.combatEffects.update(dt);
+
     this.sound.updateAmbient(dt, 'field');
   }
 

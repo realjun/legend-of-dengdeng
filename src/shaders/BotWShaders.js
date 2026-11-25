@@ -302,10 +302,12 @@ export function createBotWGrassMaterial(sharedUniforms) {
       uSunGlowColor: sharedUniforms.uSunGlowColor,
       uFogStrength: sharedUniforms.uFogStrength,
       uPlayerPos: sharedUniforms.uPlayerPos,
+      uSlashWave: sharedUniforms.uSlashWave || { value: new THREE.Vector4(0, 0, 0, 0) },
     },
     vertexShader: /* glsl */ `
       uniform float uTime;
       uniform vec3 uPlayerPos;
+      uniform vec4 uSlashWave;
 
       varying float vH;
       varying vec3 vWorldPos;
@@ -342,6 +344,21 @@ export function createBotWGrassMaterial(sharedUniforms) {
           vec2 pushDir = normalize(toBlade + vec2(0.0001));
           wp.xz += pushDir * push;
           wp.y -= push * 0.35;
+        }
+
+        // Sword Slash / Spin Attack / Shield Parry Wind-Wave Grass Ripple!
+        if (uSlashWave.w > 0.001 && uSlashWave.z > 0.1) {
+          vec2 fromSlash = wp.xz - uSlashWave.xy;
+          float sDist = length(fromSlash);
+          if (sDist < uSlashWave.z && abs(baseWorld.y - uPlayerPos.y) < 2.2) {
+            float falloff = 1.0 - sDist / uSlashWave.z;
+            float ringBoost = 0.55 + 0.45 * sin(falloff * 4.5);
+            float sPush = falloff * ringBoost * uSlashWave.w * flex;
+            vec2 sDir = normalize(fromSlash + vec2(0.0001));
+            wp.xz += sDir * sPush * 0.88;
+            wp.y -= min(0.42 * flex, sPush * 0.48);
+            vGust = clamp(vGust + falloff * uSlashWave.w * 0.55, 0.0, 1.25);
+          }
         }
 
         vWorldPos = wp.xyz;

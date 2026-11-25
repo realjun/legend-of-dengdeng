@@ -202,17 +202,21 @@ body {
   transform: translateX(-50%);
   z-index: 10;
   pointer-events: none;
+  white-space: nowrap;
+  max-width: 95vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
-  letter-spacing: 0.12em;
-  color: rgba(252, 248, 236, 0.78);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
-  padding: 4px 14px;
+  letter-spacing: 0.10em;
+  color: rgba(252, 248, 236, 0.84);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.58);
+  padding: 5px 16px;
   border-radius: 999px;
-  background: rgba(12, 18, 26, 0.24);
+  background: rgba(12, 18, 26, 0.30);
   backdrop-filter: blur(4px);
   transition: opacity 0.8s ease;
 }
 
 #walk-hint.dimmed {
-  opacity: 0.28;
+  opacity: 0.48;
 }
