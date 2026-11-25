@@ -117,20 +117,20 @@ export class CelebrationSystem {
     }
     this.warmLight.position.set(playerPos.x, playerPos.y + 4.5, playerPos.z);
 
-    // Burst joyful hearts around Russian Blue, Maine Coon & Husband!
+    // Burst joyful hearts around Broccoli, Jelly & Husband!
     if (this.family) {
       this.family.spawnFloatingHeart(
         new THREE.Vector3(playerPos.x, playerPos.y + 1.8, playerPos.z),
         '#ff9ec7',
         6
       );
-      if (this.family.russianBlue) {
-        const rb = this.family.russianBlue.pos;
-        this.family.spawnFloatingHeart(new THREE.Vector3(rb.x, rb.y + 0.5, rb.z), '#6ef7b2', 4);
+      if (this.family.broccoli || this.family.russianBlue) {
+        const rb = (this.family.broccoli || this.family.russianBlue).pos;
+        this.family.spawnFloatingHeart(new THREE.Vector3(rb.x, rb.y + 0.5, rb.z), '#9be28c', 4);
       }
-      if (this.family.maineCoon) {
-        const mc = this.family.maineCoon.pos;
-        this.family.spawnFloatingHeart(new THREE.Vector3(mc.x, mc.y + 0.6, mc.z), '#ffd166', 4);
+      if (this.family.jelly || this.family.maineCoon) {
+        const mc = (this.family.jelly || this.family.maineCoon).pos;
+        this.family.spawnFloatingHeart(new THREE.Vector3(mc.x, mc.y + 0.55, mc.z), '#ffb86c', 4);
       }
     }
 

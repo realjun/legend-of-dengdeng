@@ -254,8 +254,8 @@ export class PuzzleSystem {
 
     // Two Glowing Cat-Paw Rune Pads + Central Resonance Prism
     const padSpecs = [
-      { ox: -2.2, oz: 1.2, color: 0x3ef79c, role: 'russian' },
-      { ox: 2.2, oz: 1.2, color: 0xffcb57, role: 'maine' },
+      { ox: -2.2, oz: 1.2, color: 0x9be28c, role: 'russian' },
+      { ox: 2.2, oz: 1.2, color: 0xffb469, role: 'maine' },
     ];
 
     padSpecs.forEach((p) => {
@@ -287,9 +287,9 @@ export class PuzzleSystem {
       z: sz - 1.2,
       rotY: 0,
       locked: true,
-      lockHint: '带着小蓝与大福踏上圣坛，释放一次「长按J回旋斩」或「E盾反」共鸣解封',
+      lockHint: '带着 Broccoli 与 Jelly 踏上圣坛，释放一次「长按J回旋斩」或「E盾反」共鸣解封',
       title: '心愿星徽 ② · 双喵守护之星',
-      message: '「给登登的第二颗星：有小蓝的绿眸寻路、大福的狮鬃护航，我们一家四口永远整整齐齐！」',
+      message: '「给登登的第二颗星：有 Broccoli 的绿眸寻路、Jelly 的蓝眼护航，我们一家四口永远整整齐齐！」',
     });
   }
 

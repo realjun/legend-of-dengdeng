@@ -233,20 +233,19 @@ export class SoundEngine {
 
   catPurr(breed = 'russian') {
     if (!this.ctx || !this.enabled) return;
-    if (breed === 'maine') {
-      // Iconic Maine Coon musical trill ("brrr-up~!") + deep warm rumble purr!
-      [340, 415, 510, 620].forEach((f, i) => {
-        this.playTone(f, 0.09, 'triangle', 0.14, i * 0.042, f * 1.12);
-      });
+    if (breed === 'siamese' || breed === 'maine') {
+      // Expressive chatty Flame-Point Siamese ("Jelly") melodic vocalization + warm purr!
+      this.playTone(540, 0.14, 'triangle', 0.14, 0, 760);
+      this.playTone(760, 0.18, 'sine', 0.13, 0.09, 620);
       for (let p = 0; p < 6; p++) {
-        this.playTone(68 + (p % 2) * 8, 0.085, 'sine', 0.11, 0.20 + p * 0.075);
+        this.playTone(78 + (p % 2) * 9, 0.08, 'sine', 0.10, 0.22 + p * 0.072);
       }
     } else {
-      // Delicate sweet Russian Blue melodic meow + velvet purr
+      // Delicate sweet Blue Cat ("Broccoli") melodic meow + velvet purr
       this.playTone(660, 0.16, 'sine', 0.15, 0, 880);
       this.playTone(880, 0.22, 'triangle', 0.12, 0.11, 590);
       for (let p = 0; p < 5; p++) {
-        this.playTone(84 + (p % 2) * 10, 0.075, 'sine', 0.09, 0.28 + p * 0.07);
+        this.playTone(86 + (p % 2) * 10, 0.075, 'sine', 0.09, 0.28 + p * 0.07);
       }
     }
   }

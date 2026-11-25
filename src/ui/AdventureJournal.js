@@ -4,7 +4,7 @@ const POSTCARD_DESTINATIONS = [
   {
     id: 'cottage',
     name: '🏡 星光樱花木屋',
-    sub: '老公的爱心料理 · 小蓝与大福的家',
+    sub: '老公的爱心料理 · Broccoli 与 Jelly 的家',
     x: 27.8,
     z: 23.6,
     yaw: 0.92,

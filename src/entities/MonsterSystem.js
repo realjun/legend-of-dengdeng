@@ -518,26 +518,26 @@ export class MonsterSystem {
       this.handlePlayerParry(playerPos, charYaw);
     }
 
-    // Maine Coon Cat ("大福") Brave Pounce Assist!
-    const maine = family?.maineCoon;
-    if (maine && family.catsFollowing) {
-      if (maine.pounceCooldown > 0) maine.pounceCooldown -= dt;
-      if (maine.pounceCooldown <= 0 && maine.petTimer <= 0) {
+    // Flame-Point Siamese Cat ("Jelly") Brave Pounce Assist!
+    const jelly = family?.jelly || family?.maineCoon;
+    if (jelly && family.catsFollowing) {
+      if (jelly.pounceCooldown > 0) jelly.pounceCooldown -= dt;
+      if (jelly.pounceCooldown <= 0 && jelly.petTimer <= 0) {
         const targetM = this.monsters.find(
           (m) => m.alive && m.stunTimer <= 0 && m.pos.distanceTo(playerPos) < 5.5 && m.kind !== 'star_turret'
         );
         if (targetM) {
-          maine.pounceCooldown = 6.5;
-          maine.hopVelY = 3.8;
-          maine.pos.lerp(targetM.pos, 0.55);
+          jelly.pounceCooldown = 6.5;
+          jelly.hopVelY = 3.8;
+          jelly.pos.lerp(targetM.pos, 0.55);
           targetM.stunTimer = 2.2;
           this.damageMonster(
             targetM,
             1,
-            new THREE.Vector3(targetM.pos.x - maine.pos.x, 0, targetM.pos.z - maine.pos.z).normalize(),
+            new THREE.Vector3(targetM.pos.x - jelly.pos.x, 0, targetM.pos.z - jelly.pos.z).normalize(),
             { heavy: true }
           );
-          this.sound?.catPurr('maine');
+          this.sound?.catPurr('siamese');
         }
       }
     }

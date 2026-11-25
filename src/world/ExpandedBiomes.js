@@ -385,7 +385,7 @@ export class ExpandedBiomes {
     if (!this.mazeTreatOpened && playerPos.distanceTo(this.mazeTreatPos) < 2.2) {
       return {
         type: 'maze_treat',
-        label: '[F] 打开小蓝发现的秘藏礼盒（香香小鱼干 ×3）',
+        label: '[F] 打开 Broccoli 发现的秘藏礼盒（香香小鱼干 ×3）',
         dist: playerPos.distanceTo(this.mazeTreatPos),
       };
     }
@@ -400,7 +400,7 @@ export class ExpandedBiomes {
       sound?.shrineSolved();
       return {
         speaker: '星语树篱秘藏',
-        text: '获得了「特制香香小鱼干 ×3」！小蓝和大福闻到香味都开心地竖起了耳朵～',
+        text: '获得了「特制香香小鱼干 ×3」！Broccoli 和 Jelly 闻到香味都开心地竖起了耳朵～',
       };
     }
     return null;

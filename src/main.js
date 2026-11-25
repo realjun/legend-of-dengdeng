@@ -89,7 +89,7 @@ class HyruleExplorationApp {
     );
     this.activities.onSlalomComplete = () => {
       this.showStoryToast(
-        '小蓝 & 大福',
+        'Broccoli & Jelly',
         '「喵呜——太帅啦登登！」五道星环完美冲线，奖励 3 条香香小鱼干！',
         5200
       );
@@ -435,7 +435,7 @@ class HyruleExplorationApp {
     this.celebration.startCelebration(this.playerPos, (m) => this.setMood(m), this.camYaw);
     this.journal.showDedication();
     this.showStoryToast(
-      '老公 & 小蓝 & 大福',
+      '老公 & Broccoli & Jelly',
       '「登登看天上——！漫天心愿孔明灯和星夜烟花都为你点亮啦，永远快乐、永远被爱包围！」',
       6800
     );

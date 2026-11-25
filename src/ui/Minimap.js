@@ -301,12 +301,12 @@ export class Minimap {
     }
   }
 
-  _drawCatMarker(ctx, x, y, color, borderColor) {
+  _drawCatMarker(ctx, x, y, color, borderColor, earTipColor = null) {
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = color;
     ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 1.1;
+    ctx.lineWidth = 1.2;
     // Left & right pointy cat ears + round head
     ctx.beginPath();
     ctx.moveTo(-3.6, -1.2);
@@ -318,6 +318,19 @@ export class Minimap {
     ctx.arc(0, 0.3, 3.7, -0.25, Math.PI + 0.25, false);
     ctx.closePath();
     ctx.fill();
+    if (earTipColor) {
+      ctx.fillStyle = earTipColor;
+      ctx.beginPath();
+      ctx.moveTo(-3.6, -1.5);
+      ctx.lineTo(-4.0, -5.2);
+      ctx.lineTo(-1.2, -3.2);
+      ctx.closePath();
+      ctx.moveTo(3.6, -1.5);
+      ctx.lineTo(4.0, -5.2);
+      ctx.lineTo(1.2, -3.2);
+      ctx.closePath();
+      ctx.fill();
+    }
     ctx.stroke();
     ctx.restore();
   }
@@ -458,19 +471,19 @@ export class Minimap {
       }
     }
 
-    // 7. Russian Blue ("小蓝") & Maine Coon ("大福") Live Cat-Ear Companion Markers!
-    if (this.app.family?.russianBlue) {
-      const rb = this.app.family.russianBlue.pos;
+    // 7. Blue Cat ("Broccoli") & Flame-Point Siamese ("Jelly") Live Cat-Ear Companion Markers!
+    if (this.app.family?.broccoli || this.app.family?.russianBlue) {
+      const rb = (this.app.family.broccoli || this.app.family.russianBlue).pos;
       const p = this._projectWorldPoint(rb.x, rb.z, playerPos, mapYaw, scale, clipR - 7);
       if (!p.clamped) {
-        this._drawCatMarker(ctx, half + p.u, half + p.v, '#5ef2b8', '#142b28');
+        this._drawCatMarker(ctx, half + p.u, half + p.v, '#4b5566', '#b5cf82');
       }
     }
-    if (this.app.family?.maineCoon) {
-      const mc = this.app.family.maineCoon.pos;
+    if (this.app.family?.jelly || this.app.family?.maineCoon) {
+      const mc = (this.app.family.jelly || this.app.family.maineCoon).pos;
       const p = this._projectWorldPoint(mc.x, mc.z, playerPos, mapYaw, scale, clipR - 7);
       if (!p.clamped) {
-        this._drawCatMarker(ctx, half + p.u, half + p.v, '#ffc857', '#2e1d0c');
+        this._drawCatMarker(ctx, half + p.u, half + p.v, '#faf4e8', '#c77733', '#e89c52');
       }
     }
 

@@ -163,7 +163,7 @@ function createStarlightGliderTexture() {
   ctx.closePath();
   ctx.fill();
 
-  // Twin Cat-Paw Emblems (Emerald Russian Blue on Left, Warm Amber Maine Coon on Right!)
+  // Twin Cat-Paw Emblems (Sage-Green Broccoli on Left, Apricot-Cream Jelly on Right!)
   const drawPaw = (cx, cy, col) => {
     ctx.fillStyle = col;
     ctx.beginPath();
@@ -180,8 +180,8 @@ function createStarlightGliderTexture() {
       ctx.fill();
     }
   };
-  drawPaw(122, 128, '#6cf7b8');
-  drawPaw(390, 128, '#ffd166');
+  drawPaw(122, 128, '#9fd98b');
+  drawPaw(390, 128, '#f5a95b');
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;

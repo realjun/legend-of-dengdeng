@@ -52,6 +52,91 @@ function createLabelTexture(text, subText = '', accent = '#ffe39e') {
   return tex;
 }
 
+function createSweatshirtGraphicTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 256, 256);
+
+  // Stylized cute yellow minifigure face print on husband's black crewneck sweatshirt!
+  ctx.fillStyle = '#262930';
+  ctx.beginPath();
+  ctx.roundRect(54, 34, 148, 84, 38);
+  ctx.fill();
+
+  ctx.fillStyle = '#e7ae56';
+  ctx.beginPath();
+  ctx.roundRect(56, 76, 144, 132, 34);
+  ctx.fill();
+
+  // Beanie cap hairline
+  ctx.fillStyle = '#23262d';
+  ctx.beginPath();
+  ctx.moveTo(54, 96);
+  ctx.quadraticCurveTo(128, 72, 202, 96);
+  ctx.lineTo(202, 56);
+  ctx.quadraticCurveTo(128, 28, 54, 56);
+  ctx.closePath();
+  ctx.fill();
+
+  // Expressive eyebrows & eyes with white glints
+  ctx.strokeStyle = '#231e18';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(84, 114);
+  ctx.quadraticCurveTo(98, 106, 112, 114);
+  ctx.moveTo(144, 114);
+  ctx.quadraticCurveTo(158, 106, 172, 114);
+  ctx.stroke();
+
+  for (const ex of [98, 158]) {
+    ctx.fillStyle = '#1e1b18';
+    ctx.beginPath();
+    ctx.arc(ex, 134, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(ex + 3, 130, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Cheerful white grin + little stubble dots & chin patch
+  ctx.fillStyle = '#241d17';
+  ctx.beginPath();
+  ctx.ellipse(128, 168, 28, 13, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(128, 167, 22, 7.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#241d17';
+  for (const [dx, dy] of [
+    [-22, -13],
+    [-11, -16],
+    [0, -17],
+    [11, -16],
+    [22, -13],
+    [-38, -24],
+    [-42, -14],
+    [38, -24],
+    [42, -14],
+  ]) {
+    ctx.beginPath();
+    ctx.arc(128 + dx, 168 + dy, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.ellipse(128, 194, 18, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 export class FamilySystem {
   constructor(scene, world) {
     this.scene = scene;
@@ -74,8 +159,11 @@ export class FamilySystem {
     this._buildStarlightCottage();
     this._buildCampfireKitchen();
     this._buildHusbandCharacter();
-    this.russianBlue = this._buildCat('russian');
-    this.maineCoon = this._buildCat('maine');
+    this.broccoli = this._buildCat('broccoli'); // 蓝猫妹妹 Broccoli
+    this.jelly = this._buildCat('jelly'); // 火焰重点色暹罗弟弟 Jelly
+    // Aliases for companion integrations
+    this.russianBlue = this.broccoli;
+    this.maineCoon = this.jelly;
   }
 
   registerSecretTarget(target) {
@@ -355,8 +443,149 @@ export class FamilySystem {
     this.world.colliders.push({ x: fx, z: fz, r: 0.72 });
   }
 
+  _createHusbandFaceTexture(blinking = false) {
+    const c = document.createElement('canvas');
+    c.width = 512;
+    c.height = 512;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, 512, 512);
+
+    // Soft natural short swept black bangs along the top forehead hairline (seamless with 3D hairCap!)
+    ctx.fillStyle = '#181a20';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(512, 0);
+    ctx.lineTo(512, 118);
+    ctx.quadraticCurveTo(445, 78, 370, 96);
+    ctx.quadraticCurveTo(328, 68, 286, 94);
+    ctx.quadraticCurveTo(235, 62, 178, 98);
+    ctx.quadraticCurveTo(118, 76, 56, 114);
+    ctx.lineTo(0, 124);
+    ctx.closePath();
+    ctx.fill();
+
+    // Fuller, natural soft-feathered dark eyebrows (styled after photo-5 & photo-6)
+    ctx.fillStyle = '#221d1b';
+    for (const dir of [-1, 1]) {
+      ctx.save();
+      ctx.translate(256 + dir * 88, 184);
+      ctx.rotate(dir * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(-52 * dir, 5);
+      ctx.quadraticCurveTo(-8 * dir, -15, 46 * dir, -4);
+      ctx.quadraticCurveTo(54 * dir, 6, 42 * dir, 12);
+      ctx.quadraticCurveTo(-6 * dir, 3, -50 * dir, 13);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Gentle East-Asian almond eyes with natural upper lid fold & warm dark-brown iris
+    for (const dir of [-1, 1]) {
+      const ex = 256 + dir * 86;
+      const ey = 246;
+
+      // Subtle upper eyelid crease
+      ctx.strokeStyle = 'rgba(92, 62, 48, 0.40)';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(ex - 38 * dir, ey - 21);
+      ctx.quadraticCurveTo(ex, ey - 32, ex + 36 * dir, ey - 17);
+      ctx.stroke();
+
+      if (blinking) {
+        ctx.strokeStyle = '#241b18';
+        ctx.lineWidth = 7.5;
+        ctx.beginPath();
+        ctx.moveTo(ex - 38, ey + 2);
+        ctx.quadraticCurveTo(ex, ey + 11, ex + 38, ey + 2);
+        ctx.stroke();
+        continue;
+      }
+
+      // Soft almond sclera (calm, friendly, proportionate)
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(ex - 40, ey + 3);
+      ctx.quadraticCurveTo(ex - 4, ey - 21, ex + 39, ey + 2);
+      ctx.quadraticCurveTo(ex + 2, ey + 19, ex - 40, ey + 3);
+      ctx.closePath();
+      ctx.fillStyle = '#fcfaf7';
+      ctx.fill();
+      ctx.clip();
+
+      // Warm deep espresso-brown iris + dark pupil
+      ctx.fillStyle = '#2e1f18';
+      ctx.beginPath();
+      ctx.arc(ex, ey + 1, 20.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#120d0b';
+      ctx.beginPath();
+      ctx.arc(ex, ey + 1, 11.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Lively white catchlight + soft secondary glint
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ex - 6.5, ey - 5.5, 5.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.65;
+      ctx.beginPath();
+      ctx.arc(ex + 6.5, ey + 6.5, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Clean upper lash line defining the warm almond eye shape
+      ctx.strokeStyle = '#1b1513';
+      ctx.lineWidth = 6.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(ex - 41, ey + 3);
+      ctx.quadraticCurveTo(ex - 4, ey - 21, ex + 40, ey + 2);
+      ctx.stroke();
+    }
+
+    // Subtle warm cheek glow & gentle nostril shadow beneath 3D nose bridge
+    for (const dir of [-1, 1]) {
+      const grad = ctx.createRadialGradient(256 + dir * 110, 304, 4, 256 + dir * 110, 304, 42);
+      grad.addColorStop(0, 'rgba(232, 138, 122, 0.22)');
+      grad.addColorStop(1, 'rgba(232, 138, 122, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(256 + dir * 110, 304, 42, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(115, 74, 58, 0.42)';
+    ctx.beginPath();
+    ctx.ellipse(242, 322, 6.2, 3.5, 0.25, 0, Math.PI * 2);
+    ctx.ellipse(270, 322, 6.2, 3.5, -0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Warm, calm, affectionate closed-lip smile (photo-6)
+    ctx.fillStyle = 'rgba(196, 118, 108, 0.42)';
+    ctx.beginPath();
+    ctx.ellipse(256, 372, 42, 10.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#7a423a';
+    ctx.lineWidth = 5.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(206, 368);
+    ctx.quadraticCurveTo(256, 383, 306, 368);
+    ctx.stroke();
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
   _buildHusbandCharacter() {
-    // Expressive Studio Ghibli / Anime Toon Husband Character ("老公") tending the cottage campfire
+    // Personalized Husband Character ("老公") styled after real photos (photo-5 & photo-6):
+    // Neat swept short black hair, fuller eyebrows, calm warm almond eyes, gentle smile,
+    // and rounded black crewneck sweatshirt with the cute yellow minifigure chest graphic!
     const hx = this.campfirePos.x + 1.15;
     const hz = this.campfirePos.z + 0.78;
     const hy = this.world.getTerrainHeight(hx, hz);
@@ -365,150 +594,164 @@ export class FamilySystem {
     root.position.set(hx, hy, hz);
     root.rotation.y = -0.75;
 
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xfbe0ce, roughness: 0.65 });
-    const hairMat = new THREE.MeshStandardMaterial({ color: 0x241d1b, roughness: 0.58 });
-    const tunicMat = new THREE.MeshStandardMaterial({ color: 0x2f6859, roughness: 0.70 });
-    const collarMat = new THREE.MeshStandardMaterial({ color: 0xece3d0, roughness: 0.75 });
-    const apronMat = new THREE.MeshStandardMaterial({ color: 0xf9f3e6, roughness: 0.78 });
-    const scarfMat = new THREE.MeshStandardMaterial({ color: 0xd14945, roughness: 0.66 });
-    const pantsMat = new THREE.MeshStandardMaterial({ color: 0x3d3630, roughness: 0.82 });
-    const bootMat = new THREE.MeshStandardMaterial({ color: 0x5c3822, roughness: 0.72 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf0cc6b, metalness: 0.45, roughness: 0.35 });
+    const skinMat = new THREE.MeshStandardMaterial({
+      color: 0xf2cab0,
+      emissive: new THREE.Color(0x281a13),
+      roughness: 0.68,
+    });
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: 0x16181e,
+      emissive: new THREE.Color(0x07080b),
+      roughness: 0.58,
+    });
+    const sweaterMat = new THREE.MeshStandardMaterial({
+      color: 0x181b22,
+      emissive: new THREE.Color(0x06070a),
+      roughness: 0.84,
+    });
+    const ribCollarMat = new THREE.MeshStandardMaterial({ color: 0x111318, roughness: 0.88 });
+    const pantsMat = new THREE.MeshStandardMaterial({ color: 0x262b35, roughness: 0.84 });
+    const shoeUpperMat = new THREE.MeshStandardMaterial({ color: 0x2a2e36, roughness: 0.76 });
+    const shoeSoleMat = new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: 0.65 });
 
-    // Legs & Traveler Boots
+    // Casual Dark Pants & Clean White-Soled Sneakers
     for (const sx of [-0.105, 0.105]) {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.066, 0.054, 0.74, 10), pantsMat);
-      leg.position.set(sx, 0.46, 0);
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.056, 0.76, 10), pantsMat);
+      leg.position.set(sx, 0.45, 0);
       leg.castShadow = true;
-      const bootCuff = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.064, 0.14, 10), bootMat);
-      bootCuff.position.set(sx, 0.18, 0);
-      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.125, 0.13, 0.22), bootMat);
-      boot.position.set(sx, 0.065, 0.035);
-      boot.castShadow = true;
-      root.add(leg, bootCuff, boot);
+      const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.122, 0.095, 0.22), shoeUpperMat);
+      shoe.position.set(sx, 0.075, 0.035);
+      shoe.castShadow = true;
+      const sole = new THREE.Mesh(new THREE.BoxGeometry(0.128, 0.032, 0.23), shoeSoleMat);
+      sole.position.set(sx, 0.018, 0.035);
+      root.add(leg, shoe, sole);
     }
 
-    // Tapered Tunic Jacket + Belt + Cozy Cream Half-Apron + Red Scarf
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.195, 0.155, 0.60, 14), tunicMat);
-    torso.scale.set(1.08, 1, 0.76);
+    // Smooth Rounded-Shoulder Black Crewneck Sweatshirt + Yellow Minifigure Chest Print!
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.195, 0.36, 12, 18), sweaterMat);
+    torso.scale.set(1.12, 1.0, 0.76);
     torso.position.y = 1.08;
     torso.castShadow = true;
 
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.165, 0.055, 14), bootMat);
-    belt.scale.set(1.09, 1, 0.78);
-    belt.position.y = 0.86;
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.055, 0.025), goldMat);
-    buckle.position.set(0, 0.86, 0.132);
+    // Seamless rounded shoulder yoke connecting torso & sleeves
+    const shoulderBar = new THREE.Mesh(new THREE.CapsuleGeometry(0.082, 0.32, 10, 14), sweaterMat);
+    shoulderBar.rotation.z = Math.PI / 2;
+    shoulderBar.scale.set(1.0, 1.0, 0.92);
+    shoulderBar.position.set(0, 1.30, 0);
+    shoulderBar.castShadow = true;
 
-    const apron = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.168, 0.185, 0.36, 12, 1, false, -1.0, 2.0),
-      apronMat
-    );
-    apron.scale.set(1.09, 1, 0.80);
-    apron.position.y = 0.72;
+    const hemRib = new THREE.Mesh(new THREE.CylinderGeometry(0.184, 0.178, 0.06, 16), ribCollarMat);
+    hemRib.scale.set(1.10, 1, 0.76);
+    hemRib.position.y = 0.80;
 
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.065, 0.12, 10), skinMat);
+    const chestPrintMat = new THREE.MeshBasicMaterial({
+      map: createSweatshirtGraphicTexture(),
+      transparent: true,
+    });
+    const chestGraphic = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.24), chestPrintMat);
+    chestGraphic.position.set(0, 1.11, 0.153);
+    chestGraphic.rotation.x = -0.04;
+
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.064, 0.072, 0.14, 12), skinMat);
     neck.position.y = 1.40;
 
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.08, 12), collarMat);
-    collar.position.y = 1.36;
+    const crewCollar = new THREE.Mesh(
+      new THREE.TorusGeometry(0.088, 0.022, 8, 18),
+      ribCollarMat
+    );
+    crewCollar.rotation.x = Math.PI / 2;
+    crewCollar.scale.set(1.08, 0.90, 1);
+    crewCollar.position.y = 1.385;
 
-    const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.038, 8, 18), scarfMat);
-    scarf.rotation.x = Math.PI / 2;
-    scarf.position.y = 1.38;
-    const scarfTail = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.25, 0.024), scarfMat);
-    scarfTail.position.set(0.075, 1.25, 0.135);
-    scarfTail.rotation.z = -0.18;
-
-    // Anime Expressive Head + Eyes with Highlights + Gentle Smile + Layered Hair!
+    // Sculpted Head + Natural Swept Short Black Haircut + Ghibli Face Expression Shell!
     const headGroup = new THREE.Group();
-    headGroup.position.y = 1.54;
+    headGroup.position.y = 1.555;
 
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.152, 18, 16), skinMat);
-    head.scale.set(0.95, 1.03, 0.93);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.152, 22, 18), skinMat);
+    head.scale.set(0.95, 1.05, 0.93);
     head.castShadow = true;
 
-    // Hair crown & sideburns positioned cleanly above eyes!
-    const hairCrown = new THREE.Mesh(
-      new THREE.SphereGeometry(0.164, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.56),
+    for (const sx of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.031, 10, 10), skinMat);
+      ear.scale.set(0.50, 1.08, 0.72);
+      ear.position.set(sx * 0.144, -0.008, -0.008);
+      headGroup.add(ear);
+    }
+
+    // Crisp Ghibli-style face expression shell wrapped smoothly onto +Z front of head!
+    // In Three.js SphereGeometry, phi = Math.PI * 0.5 points directly along +Z!
+    const faceTexOpen = this._createHusbandFaceTexture(false);
+    const faceTexBlink = this._createHusbandFaceTexture(true);
+    const faceShellGeo = new THREE.SphereGeometry(
+      0.1538,
+      28,
+      22,
+      Math.PI * 0.5 - 0.88,
+      1.76,
+      Math.PI * 0.5 - 0.66,
+      1.32
+    );
+    const faceShellMat = new THREE.MeshBasicMaterial({
+      map: faceTexOpen,
+      transparent: true,
+      depthWrite: false,
+    });
+    const faceShell = new THREE.Mesh(faceShellGeo, faceShellMat);
+    faceShell.scale.copy(head.scale);
+
+    // Subtle 3D nose bridge aligned cleanly with nostrils
+    const noseBridge = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 10), skinMat);
+    noseBridge.scale.set(0.76, 1.12, 0.88);
+    noseBridge.position.set(0, -0.020, 0.141);
+
+    // Clean, seamless short black haircut (smooth rounded crown + tapered back + temple sideburns!)
+    const hairCap = new THREE.Mesh(
+      new THREE.SphereGeometry(0.157, 24, 18, 0, Math.PI * 2, 0, Math.PI * 0.50),
       hairMat
     );
-    hairCrown.position.set(0, 0.032, -0.012);
-    hairCrown.rotation.x = -0.28;
+    hairCap.scale.set(0.97, 1.07, 0.96);
+    hairCap.position.set(0, 0.020, -0.010);
+    hairCap.rotation.x = -0.34;
+
+    // Gentle side-part crown volume blended seamlessly into hairCap
+    const hairTopSweep = new THREE.Mesh(new THREE.SphereGeometry(0.150, 20, 16), hairMat);
+    hairTopSweep.scale.set(0.99, 0.88, 0.96);
+    hairTopSweep.position.set(0.006, 0.044, -0.004);
+    hairTopSweep.rotation.set(-0.08, 0, -0.06);
+
+    // Tapered temple / sideburn panels framing both sides down to the ears
+    for (const sx of [-1, 1]) {
+      const sideburn = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.076, 6, 8), hairMat);
+      sideburn.scale.set(0.55, 1.0, 0.92);
+      sideburn.position.set(sx * 0.136, 0.042, 0.028);
+      sideburn.rotation.z = sx * 0.14;
+      sideburn.rotation.x = 0.16;
+      headGroup.add(sideburn);
+    }
 
     const hairBack = new THREE.Mesh(
-      new THREE.SphereGeometry(0.160, 14, 12, Math.PI * 0.15, Math.PI * 0.7, Math.PI * 0.25, Math.PI * 0.55),
+      new THREE.SphereGeometry(0.156, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.66),
       hairMat
     );
-    hairBack.rotation.y = -Math.PI / 2;
-    hairBack.position.set(0, 0.01, -0.018);
+    hairBack.scale.set(0.96, 1.02, 0.95);
+    hairBack.rotation.x = -0.78;
+    hairBack.position.set(0, 0.005, -0.014);
 
-    // Swept anime bangs leaving bright expressive eyes clearly visible!
-    for (let i = -2; i <= 2; i++) {
-      const tuft = new THREE.Mesh(new THREE.ConeGeometry(0.036, 0.105, 6), hairMat);
-      tuft.position.set(i * 0.042, 0.105, 0.122 - Math.abs(i) * 0.012);
-      tuft.rotation.x = Math.PI * 0.92;
-      tuft.rotation.z = i * 0.14 + 0.06;
-      headGroup.add(tuft);
-    }
+    headGroup.add(head, faceShell, noseBridge, hairCap, hairTopSweep, hairBack);
 
-    const scleraMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const irisMat = new THREE.MeshBasicMaterial({ color: 0x3b261d });
-    const browMat = new THREE.MeshBasicMaterial({ color: 0x261d1a });
-    const smileMat = new THREE.MeshBasicMaterial({ color: 0xc46e62 });
-
-    const makeEye = (sx) => {
-      const eg = new THREE.Group();
-      eg.position.set(sx * 0.054, 0.004, 0.134);
-      const white = new THREE.Mesh(new THREE.SphereGeometry(0.024, 10, 10), scleraMat);
-      white.scale.set(1.05, 1.15, 0.35);
-      const iris = new THREE.Mesh(new THREE.SphereGeometry(0.017, 10, 10), irisMat);
-      iris.scale.set(1.0, 1.18, 0.4);
-      iris.position.z = 0.005;
-      const glint = new THREE.Mesh(new THREE.SphereGeometry(0.006, 6, 6), scleraMat);
-      glint.position.set(0.006, 0.007, 0.012);
-      eg.add(white, iris, glint);
-      return eg;
-    };
-
-    const eyeL = makeEye(1);
-    const eyeR = makeEye(-1);
-
-    for (const sx of [-1, 1]) {
-      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.008, 0.01), browMat);
-      brow.position.set(sx * 0.054, 0.044, 0.136);
-      brow.rotation.z = -sx * 0.08;
-      const blush = new THREE.Mesh(
-        new THREE.CircleGeometry(0.018, 10),
-        new THREE.MeshBasicMaterial({ color: 0xf4a29d, transparent: true, opacity: 0.45 })
-      );
-      blush.position.set(sx * 0.078, -0.026, 0.132);
-      blush.rotation.y = sx * 0.35;
-      headGroup.add(brow, blush);
-    }
-
-    const smile = new THREE.Mesh(
-      new THREE.TorusGeometry(0.022, 0.0045, 6, 12, Math.PI * 0.85),
-      smileMat
-    );
-    smile.rotation.z = Math.PI * 1.08;
-    smile.position.set(0, -0.036, 0.136);
-
-    headGroup.add(head, hairCrown, hairBack, eyeL, eyeR, smile);
-
-    // Articulated Left & Right Arms
+    // Articulated Left & Right Black Sweatshirt Sleeves (tucked seamlessly into rounded shoulders)
     const armL = new THREE.Group();
-    armL.position.set(0.22, 1.30, 0);
-    const sleeveL = new THREE.Mesh(new THREE.CylinderGeometry(0.050, 0.042, 0.44, 9), tunicMat);
-    sleeveL.position.y = -0.20;
-    const handL = new THREE.Mesh(new THREE.SphereGeometry(0.044, 8, 8), skinMat);
-    handL.position.y = -0.43;
+    armL.position.set(0.225, 1.30, 0);
+    const sleeveL = new THREE.Mesh(new THREE.CapsuleGeometry(0.052, 0.34, 8, 12), sweaterMat);
+    sleeveL.position.y = -0.18;
+    const handL = new THREE.Mesh(new THREE.SphereGeometry(0.044, 10, 10), skinMat);
+    handL.position.y = -0.40;
     armL.add(sleeveL, handL);
-    armL.rotation.z = 0.20;
-    armL.rotation.x = 0.24;
+    armL.rotation.z = 0.14;
+    armL.rotation.x = 0.18;
 
     const armR = new THREE.Group();
-    armR.position.set(-0.22, 1.30, 0);
+    armR.position.set(-0.225, 1.30, 0);
     const sleeveR = sleeveL.clone();
     const handR = handL.clone();
     const ladle = new THREE.Mesh(
@@ -516,29 +759,27 @@ export class FamilySystem {
       new THREE.MeshStandardMaterial({ color: 0x8c5a32, roughness: 0.8 })
     );
     ladle.rotation.x = Math.PI / 2;
-    ladle.position.set(0, -0.44, 0.13);
+    ladle.position.set(0, -0.41, 0.13);
     armR.add(sleeveR, handR, ladle);
 
     // Delicate Floating Nameplate Sprite
     const labelSprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
-        map: createLabelTexture('老公', '星光木屋 · 爱心主厨', '#ffe6a3'),
+        map: createLabelTexture('老公', '星光木屋 · 专属大厨', '#ffe6a3'),
         transparent: true,
         depthWrite: false,
       })
     );
-    labelSprite.position.set(0, 1.92, 0);
+    labelSprite.position.set(0, 1.94, 0);
     labelSprite.scale.set(0.86, 0.27, 1);
 
     root.add(
       torso,
-      belt,
-      buckle,
-      apron,
+      shoulderBar,
+      hemRib,
+      chestGraphic,
       neck,
-      collar,
-      scarf,
-      scarfTail,
+      crewCollar,
       headGroup,
       armL,
       armR,
@@ -553,181 +794,252 @@ export class FamilySystem {
       baseYaw: -0.75,
       headGroup,
       armR,
-      eyeL,
-      eyeR,
+      faceShellMat,
+      faceTexOpen,
+      faceTexBlink,
       labelSprite,
       waveTimer: 0,
       greetCooldown: 0,
     };
   }
 
-  _buildCat(breed) {
-    const isMaine = breed === 'maine';
-    const scale = isMaine ? 1.38 : 0.98;
+  _buildCat(kind) {
+    // 'broccoli': Female Russian Blue / Slate-Blue cat with sage-olive green eyes & signature tiny white chest locket!
+    // 'jelly': Male Flame-Point Siamese cat of matching sleek size with luminous cream-white body, toasted apricot mask/ears/tail & sapphire-blue eyes!
+    const isJelly = kind === 'jelly';
+    const scale = isJelly ? 1.02 : 0.99; // Matching sleek body sizes just like real Broccoli & Jelly!
 
     const root = new THREE.Group();
-    const coatColor = isMaine ? 0x7c5336 : 0x62768c;
-    const coatSheen = isMaine ? 0x9c6e49 : 0x859bb3;
-    const bibColor = isMaine ? 0xf3e7d3 : 0x72879e;
-    const eyeColor = isMaine ? 0xe8b838 : 0x29eb7d; // Amber-gold Maine Coon vs Vivid Emerald Russian Blue!
+    const coatColor = isJelly ? 0xfcf6eb : 0x566173;
+    const coatEmissive = isJelly ? 0x26211b : 0x161b24;
+    const accentPointColor = isJelly ? 0xeaa35e : 0x667286;
+    const accentEmissive = isJelly ? 0x241508 : 0x181e28;
+    const pawColor = isJelly ? 0xffffff : 0x4d5768;
+    const earOuterColor = isJelly ? 0xeba563 : 0x495363;
+    const earInnerColor = isJelly ? 0xfad0cb : 0x7a6870;
+    const eyeColor = isJelly ? 0x5886c9 : 0xb8d487; // Sapphire-periwinkle blue (Jelly) vs Sage-olive green (Broccoli)!
 
-    const coatMat = new THREE.MeshStandardMaterial({ color: coatColor, roughness: isMaine ? 0.82 : 0.56 });
-    const sheenMat = new THREE.MeshStandardMaterial({ color: coatSheen, roughness: 0.62 });
-    const bibMat = new THREE.MeshStandardMaterial({ color: bibColor, roughness: 0.85 });
-    const earInnerMat = new THREE.MeshStandardMaterial({ color: 0xe2a2a8, roughness: 0.75 });
+    const coatMat = new THREE.MeshStandardMaterial({
+      color: coatColor,
+      emissive: new THREE.Color(coatEmissive),
+      roughness: 0.64,
+    });
+    const pointMat = new THREE.MeshStandardMaterial({
+      color: accentPointColor,
+      emissive: new THREE.Color(accentEmissive),
+      roughness: 0.64,
+    });
+    const pawMat = new THREE.MeshStandardMaterial({
+      color: pawColor,
+      emissive: new THREE.Color(isJelly ? 0x242424 : 0x141820),
+      roughness: 0.68,
+    });
+    const earOuterMat = new THREE.MeshStandardMaterial({
+      color: earOuterColor,
+      emissive: new THREE.Color(isJelly ? 0x241508 : 0x131720),
+      roughness: 0.68,
+    });
+    const earInnerMat = new THREE.MeshStandardMaterial({
+      color: earInnerColor,
+      emissive: new THREE.Color(isJelly ? 0x261818 : 0x181216),
+      roughness: 0.74,
+    });
+    const whiteLocketMat = new THREE.MeshStandardMaterial({
+      color: 0xfbfaf5,
+      emissive: new THREE.Color(0x343430),
+      roughness: 0.68,
+    });
     const eyeMat = new THREE.MeshBasicMaterial({ color: eyeColor });
-    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111518 });
+    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x10141c });
+    const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
     const bodyPivot = new THREE.Group();
     bodyPivot.scale.setScalar(scale);
     root.add(bodyPivot);
 
-    // Sculpted Feline Torso
-    const torso = new THREE.Mesh(new THREE.SphereGeometry(0.155, 14, 12), coatMat);
-    torso.scale.set(0.82, 0.86, 1.58);
+    // Sleek Sculpted Feline Torso (matching proportions for both cats!)
+    const torso = new THREE.Mesh(new THREE.SphereGeometry(0.152, 16, 14), coatMat);
+    torso.scale.set(0.84, 0.88, 1.54);
     torso.position.set(0, 0.23, 0);
     torso.castShadow = true;
     bodyPivot.add(torso);
 
-    if (isMaine) {
-      // Magnificent Fluffy Lion-Mane Ruff around neck & chest!
-      const mane = new THREE.Mesh(new THREE.DodecahedronGeometry(0.175, 1), bibMat);
-      mane.scale.set(1.05, 1.08, 0.85);
-      mane.position.set(0, 0.26, 0.16);
-      mane.castShadow = true;
-      const chestFluff = new THREE.Mesh(new THREE.SphereGeometry(0.125, 10, 10), bibMat);
-      chestFluff.position.set(0, 0.19, 0.22);
-      bodyPivot.add(mane, chestFluff);
+    // Plush feline chest curve for both cats
+    const chest = new THREE.Mesh(
+      new THREE.SphereGeometry(0.112, 12, 10),
+      isJelly ? pawMat : coatMat
+    );
+    chest.scale.set(0.90, 0.96, 0.86);
+    chest.position.set(0, 0.22, 0.158);
+    bodyPivot.add(chest);
+
+    if (isJelly) {
+      // Soft toasted-apricot saddle tint across Jelly's back
+      const saddle = new THREE.Mesh(
+        new THREE.SphereGeometry(0.145, 12, 10),
+        new THREE.MeshStandardMaterial({
+          color: 0xf3d7ad,
+          emissive: new THREE.Color(0x241a10),
+          roughness: 0.68,
+        })
+      );
+      saddle.scale.set(0.81, 0.68, 1.24);
+      saddle.position.set(0, 0.274, -0.02);
+      bodyPivot.add(saddle);
+    } else {
+      // Broccoli's signature adorable tiny WHITE CHEST LOCKET tuft clearly visible on her chest (photo-1 & photo-2)!
+      const locket = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), whiteLocketMat);
+      locket.scale.set(1.05, 0.72, 0.52);
+      locket.position.set(0, 0.226, 0.244);
+      bodyPivot.add(locket);
     }
 
-    // Feline Head + Breed-Specific Ears & Muzzle
+    // Feline Head + Plump Peanut Whisker Pads + Authentic Markings
     const headGroup = new THREE.Group();
-    headGroup.position.set(0, 0.34, 0.24);
+    headGroup.position.set(0, 0.345, 0.235);
 
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.125, 14, 12), coatMat);
-    head.scale.set(isMaine ? 1.06 : 0.96, 0.94, 0.98);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.125, 16, 14), coatMat);
+    head.scale.set(1.0, 0.94, 0.96);
     head.castShadow = true;
 
-    const muzzle = new THREE.Mesh(
-      new THREE.SphereGeometry(0.052, 10, 8),
-      isMaine ? bibMat : sheenMat
-    );
-    muzzle.scale.set(isMaine ? 1.22 : 1.0, 0.78, 0.9);
-    muzzle.position.set(0, -0.028, 0.105);
+    // Two cute rounded peanut whisker pads
+    for (const sx of [-1, 1]) {
+      const pad = new THREE.Mesh(
+        new THREE.SphereGeometry(0.036, 10, 8),
+        isJelly ? pawMat : pointMat
+      );
+      pad.scale.set(1.05, 0.82, 0.88);
+      pad.position.set(sx * 0.026, -0.030, 0.102);
+      headGroup.add(pad);
+    }
 
-    const nose = new THREE.Mesh(
-      new THREE.ConeGeometry(0.016, 0.018, 3),
-      new THREE.MeshBasicMaterial({ color: isMaine ? 0xd97b78 : 0x45505e })
-    );
-    nose.rotation.x = Math.PI;
-    nose.position.set(0, -0.014, 0.145);
+    if (isJelly) {
+      // Jelly's soft toasted apricot-ginger Flame-Point nose bridge mask + 3 delicate forehead tabby stripes!
+      const flameMask = new THREE.Mesh(new THREE.SphereGeometry(0.046, 12, 10), pointMat);
+      flameMask.scale.set(0.82, 0.95, 0.76);
+      flameMask.position.set(0, -0.002, 0.094);
+      headGroup.add(flameMask);
 
-    // Expressive Feline Eyes
-    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.024, 10, 10), eyeMat);
-    eyeL.scale.set(1.0, 1.05, 0.55);
-    eyeL.position.set(0.050, 0.015, 0.105);
-    const pupilL = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.028, 0.012), pupilMat);
-    pupilL.position.set(0.050, 0.015, 0.116);
-
-    const eyeR = eyeL.clone();
-    eyeR.position.x = -0.050;
-    const pupilR = pupilL.clone();
-    pupilR.position.x = -0.050;
-
-    // Pointed Ears (+ Tall Lynx Ear Tufts for Maine Coon!)
-    for (const s of [-1, 1]) {
-      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.115, 4), coatMat);
-      ear.position.set(s * 0.074, 0.115, 0.01);
-      ear.rotation.z = -s * 0.24;
-      ear.rotation.y = s * 0.35;
-
-      const inner = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.075, 4), earInnerMat);
-      inner.position.set(s * 0.074, 0.108, 0.024);
-      inner.rotation.copy(ear.rotation);
-      headGroup.add(ear, inner);
-
-      if (isMaine) {
-        const lynxTuft = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.068, 5), sheenMat);
-        lynxTuft.position.set(s * 0.092, 0.182, 0.01);
-        lynxTuft.rotation.z = -s * 0.28;
-        headGroup.add(lynxTuft);
+      const stripeMat = new THREE.MeshStandardMaterial({
+        color: 0xe29852,
+        emissive: new THREE.Color(0x221408),
+        roughness: 0.68,
+      });
+      for (const sx of [-1, 0, 1]) {
+        const st = new THREE.Mesh(new THREE.CapsuleGeometry(0.0045, 0.026, 4, 6), stripeMat);
+        st.position.set(sx * 0.022, 0.056, 0.102 - Math.abs(sx) * 0.004);
+        st.rotation.x = -0.38;
+        st.rotation.z = -sx * 0.15;
+        headGroup.add(st);
       }
     }
 
-    headGroup.add(head, muzzle, nose, eyeL, pupilL, eyeR, pupilR);
+    const nose = new THREE.Mesh(
+      new THREE.ConeGeometry(0.015, 0.017, 3),
+      new THREE.MeshBasicMaterial({ color: isJelly ? 0xf0938c : 0x2b313b })
+    );
+    nose.rotation.x = Math.PI;
+    nose.position.set(0, -0.016, 0.138);
+
+    // Expressive Feline Eyes + Lively White Catchlight Glints!
+    for (const sx of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.024, 12, 10), eyeMat);
+      eye.scale.set(1.02, 1.02, 0.52);
+      eye.position.set(sx * 0.048, 0.014, 0.104);
+
+      const pupil = new THREE.Mesh(
+        isJelly
+          ? new THREE.SphereGeometry(0.013, 10, 8)
+          : new THREE.BoxGeometry(0.0085, 0.026, 0.012),
+        pupilMat
+      );
+      if (isJelly) pupil.scale.set(0.86, 1.08, 0.45);
+      pupil.position.set(sx * 0.048, 0.014, 0.115);
+
+      const glint = new THREE.Mesh(new THREE.SphereGeometry(0.0052, 6, 6), glintMat);
+      glint.position.set(sx * 0.048 - 0.006, 0.020, 0.121);
+      headGroup.add(eye, pupil, glint);
+    }
+
+    // Sleek Pointed Feline Ears
+    for (const s of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.047, 0.112, 4), earOuterMat);
+      ear.position.set(s * 0.072, 0.110, 0.01);
+      ear.rotation.z = -s * 0.24;
+      ear.rotation.y = s * 0.35;
+
+      const inner = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.074, 4), earInnerMat);
+      inner.position.set(s * 0.072, 0.104, 0.024);
+      inner.rotation.copy(ear.rotation);
+      headGroup.add(ear, inner);
+    }
+
+    headGroup.add(head, nose);
     bodyPivot.add(headGroup);
 
-    // 4 Articulated Legs
+    // 4 Smooth Capsule Legs Tucked Cleanly Into Shoulders/Hips + Snowy White Socks for Jelly
     const legs = [];
     const legCoords = [
-      [-0.075, 0.15, 0.14],
-      [0.075, 0.15, 0.14],
-      [-0.080, 0.15, -0.14],
-      [0.080, 0.15, -0.14],
+      [-0.062, 0.165, 0.135],
+      [0.062, 0.165, 0.135],
+      [-0.066, 0.165, -0.135],
+      [0.066, 0.165, -0.135],
     ];
     legCoords.forEach(([lx, ly, lz]) => {
       const pivot = new THREE.Group();
       pivot.position.set(lx, ly, lz);
-      const limb = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.026, 0.16, 8), coatMat);
-      limb.position.y = -0.07;
-      const paw = new THREE.Mesh(
-        new THREE.SphereGeometry(0.032, 8, 8),
-        isMaine ? bibMat : sheenMat
-      );
-      paw.scale.set(1, 0.68, 1.25);
-      paw.position.set(0, -0.145, 0.015);
+      const limb = new THREE.Mesh(new THREE.CapsuleGeometry(0.027, 0.115, 6, 8), coatMat);
+      limb.position.y = -0.075;
+      const paw = new THREE.Mesh(new THREE.SphereGeometry(0.030, 8, 8), pawMat);
+      paw.scale.set(1.0, 0.68, 1.25);
+      paw.position.set(0, -0.152, 0.014);
       pivot.add(limb, paw);
       bodyPivot.add(pivot);
       legs.push(pivot);
     });
 
-    // Tail: Sleek Tapering Curve for Russian Blue vs Magnificent Plumed Feather Tail for Maine Coon!
+    // Sleek Tapering Curved Tail (slate-blue for Broccoli, toasted apricot-ginger flame tail for Jelly!)
     const tailPivot = new THREE.Group();
-    tailPivot.position.set(0, 0.26, -0.22);
-    if (isMaine) {
-      for (let seg = 0; seg < 5; seg++) {
-        const r = 0.055 + Math.sin((seg / 4) * Math.PI) * 0.038;
-        const puff = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 1), seg % 2 === 0 ? coatMat : sheenMat);
-        puff.position.set(0, seg * 0.068 + 0.03, -seg * 0.062 - 0.03);
-        puff.castShadow = true;
-        tailPivot.add(puff);
-      }
-    } else {
-      const tCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, 0.06, -0.12),
-        new THREE.Vector3(0, 0.19, -0.20),
-        new THREE.Vector3(0, 0.30, -0.16),
-      ]);
-      const tailMesh = new THREE.Mesh(new THREE.TubeGeometry(tCurve, 12, 0.024, 8, false), coatMat);
-      tailMesh.castShadow = true;
-      tailPivot.add(tailMesh);
-    }
+    tailPivot.position.set(0, 0.25, -0.21);
+    const tCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0.06, -0.12),
+      new THREE.Vector3(0, 0.19, -0.20),
+      new THREE.Vector3(0, 0.30, -0.16),
+    ]);
+    const tailMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(tCurve, 12, 0.025, 8, false),
+      isJelly ? pointMat : coatMat
+    );
+    tailMesh.castShadow = true;
+    tailPivot.add(tailMesh);
     bodyPivot.add(tailPivot);
 
-    // Floating Name + Curiosity Sprite
-    const labelText = isMaine ? '缅因猫 · 大福' : '俄罗斯蓝猫 · 小蓝';
-    const subLabel = isMaine ? '蓬松小狮王' : '翡翠绿眸寻宝喵';
+    // Floating Nameplate Sprite
+    const labelText = isJelly ? 'Jelly' : 'Broccoli';
+    const subLabel = isJelly ? '暹罗猫弟弟 · 护卫小骑士' : '蓝猫妹妹 · 寻宝小向导';
     const nameSprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
-        map: createLabelTexture(labelText, subLabel, isMaine ? '#ffd98e' : '#9cf7c8'),
+        map: createLabelTexture(labelText, subLabel, isJelly ? '#ffd599' : '#b8eb9c'),
         transparent: true,
         depthWrite: false,
       })
     );
-    nameSprite.position.set(0, isMaine ? 0.78 : 0.64, 0);
-    nameSprite.scale.set(0.66, 0.20, 1);
+    nameSprite.position.set(0, 0.66, 0);
+    nameSprite.scale.set(0.68, 0.21, 1);
     root.add(nameSprite);
 
-    const startX = this.campfirePos.x + (isMaine ? -0.9 : 0.4);
-    const startZ = this.campfirePos.z + (isMaine ? -0.8 : -1.1);
+    const startX = this.campfirePos.x + (isJelly ? -0.85 : 0.45);
+    const startZ = this.campfirePos.z + (isJelly ? -0.85 : -1.1);
     const startY = this.world.getWalkHeight(startX, startZ);
     root.position.set(startX, startY, startZ);
     this.group.add(root);
 
     return {
-      breed,
-      name: isMaine ? '缅因猫·大福' : '俄罗斯蓝猫·小蓝',
+      breed: isJelly ? 'siamese' : 'russian',
+      kind,
+      name: isJelly ? '暹罗猫 Jelly' : '蓝猫 Broccoli',
+      shortName: isJelly ? 'Jelly' : 'Broccoli',
       root,
       bodyPivot,
       headGroup,
@@ -774,9 +1086,9 @@ export class FamilySystem {
   }
 
   onPlayerSlash() {
-    // Maine Coon gets excited and does a cute brave battle hop!
-    if (this.maineCoon && this.maineCoon.hopY <= 0.01 && this.maineCoon.petTimer <= 0) {
-      this.maineCoon.hopVelY = 2.6;
+    // Jelly gets excited and does a brave little Siamese hop!
+    if (this.jelly && this.jelly.hopY <= 0.01 && this.jelly.petTimer <= 0) {
+      this.jelly.hopVelY = 2.6;
     }
   }
 
@@ -794,14 +1106,14 @@ export class FamilySystem {
       };
     }
 
-    for (const cat of [this.russianBlue, this.maineCoon]) {
+    for (const cat of [this.broccoli, this.jelly]) {
       const dc = playerPos.distanceTo(cat.pos);
       if (dc < Math.min(bestDist, 2.35)) {
         bestDist = dc;
         best = {
           type: 'cat',
           cat,
-          label: `[F] 撸${cat.name}`,
+          label: `[F] 撸 ${cat.name}`,
           dist: dc,
         };
       }
@@ -830,7 +1142,7 @@ export class FamilySystem {
         },
         {
           speaker: '老公',
-          text: '「你看小蓝和大福多黏你，不管你去树篱迷宫还是蘑菇谷冒险，它们俩都寸步不离跟着你呢！」',
+          text: '「你看 Broccoli 和 Jelly 多黏你，不管你去迷宫还是云端冒险，姐弟俩都寸步不离跟着你呢！」',
           jingle: false,
         },
         {
@@ -855,20 +1167,21 @@ export class FamilySystem {
       const cat = interaction.cat;
       cat.petTimer = 2.6;
       sound?.catPurr(cat.breed);
+      const isJelly = cat.kind === 'jelly';
       this.spawnFloatingHeart(
         new THREE.Vector3(cat.pos.x, cat.pos.y + 0.45, cat.pos.z),
-        cat.breed === 'maine' ? '#ffc857' : '#6ef7b2',
+        isJelly ? '#ffb86c' : '#8be89e',
         4
       );
-      if (cat.breed === 'maine') {
+      if (isJelly) {
         return {
-          speaker: '缅因猫 · 大福',
-          text: '「咕噜噜喵呜～！」大福豪迈地翻开毛茸茸的大肚皮向登登撒娇，大尾巴摇得像小扇子！',
+          speaker: '暹罗猫 · Jelly',
+          text: '「咪呜——咕噜噜～！」Jelly 睁着圆溜溜的蓝眼睛撒娇地翻开雪白肚皮，烤吐司色的小耳朵一抖一抖讨摸摸！',
         };
       }
       return {
-        speaker: '俄罗斯蓝猫 · 小蓝',
-        text: '「喵～呼噜噜…」小蓝眯起翡翠绿的大眼睛，温柔地用银蓝色的小脑袋蹭了蹭登登的手心。',
+        speaker: '蓝猫 · Broccoli',
+        text: '「喵呜～呼噜噜…」Broccoli 眯起温柔的浅绿眼睛，露出胸口那一小撮可爱白毛，轻轻蹭着登登的手心。',
       };
     }
 
@@ -884,18 +1197,18 @@ export class FamilySystem {
 
     const rx = playerPos.x - rightX * 1.15 - fwdX * 0.6;
     const rz = playerPos.z - rightZ * 1.15 - fwdZ * 0.6;
-    this.russianBlue.pos.set(rx, this.world.getWalkHeight(rx, rz, playerPos.y), rz);
-    this.russianBlue.root.position.copy(this.russianBlue.pos);
+    this.broccoli.pos.set(rx, this.world.getWalkHeight(rx, rz, playerPos.y), rz);
+    this.broccoli.root.position.copy(this.broccoli.pos);
 
-    const mx = playerPos.x + rightX * 1.25 - fwdX * 0.6;
-    const mz = playerPos.z + rightZ * 1.25 - fwdZ * 0.6;
-    this.maineCoon.pos.set(mx, this.world.getWalkHeight(mx, mz, playerPos.y), mz);
-    this.maineCoon.root.position.copy(this.maineCoon.pos);
+    const mx = playerPos.x + rightX * 1.18 - fwdX * 0.6;
+    const mz = playerPos.z + rightZ * 1.18 - fwdZ * 0.6;
+    this.jelly.pos.set(mx, this.world.getWalkHeight(mx, mz, playerPos.y), mz);
+    this.jelly.root.position.copy(this.jelly.pos);
   }
 
   _updateCat(cat, dt, playerPos, charYaw, time) {
-    const isMaine = cat.breed === 'maine';
-    const sideSign = isMaine ? 1 : -1;
+    const isJelly = cat.kind === 'jelly';
+    const sideSign = isJelly ? 1 : -1;
 
     // Target formation spot beside Dengdeng (or near cottage campfire if staying home)
     let targetX;
@@ -906,11 +1219,11 @@ export class FamilySystem {
       const rightZ = -Math.sin(charYaw);
       const fwdX = Math.sin(charYaw);
       const fwdZ = Math.cos(charYaw);
-      targetX = playerPos.x + rightX * sideSign * 1.25 - fwdX * 0.68;
-      targetZ = playerPos.z + rightZ * sideSign * 1.25 - fwdZ * 0.68;
+      targetX = playerPos.x + rightX * sideSign * 1.18 - fwdX * 0.68;
+      targetZ = playerPos.z + rightZ * sideSign * 1.18 - fwdZ * 0.68;
 
-      // Russian Blue curiosity nudge toward nearby unsolved secrets!
-      if (!isMaine && this.secretTargets.length > 0 && playerPos.y < 20) {
+      // Broccoli's keen curiosity nudge toward nearby unsolved secrets!
+      if (!isJelly && this.secretTargets.length > 0 && playerPos.y < 20) {
         for (const s of this.secretTargets) {
           if (s.isSolved && s.isSolved()) continue;
           const ds = Math.hypot(playerPos.x - s.x, playerPos.z - s.z);
@@ -922,7 +1235,7 @@ export class FamilySystem {
         }
       }
     } else {
-      targetX = this.campfirePos.x + sideSign * 1.1;
+      targetX = this.campfirePos.x + sideSign * 1.05;
       targetZ = this.campfirePos.z - 0.9;
     }
 
@@ -940,11 +1253,11 @@ export class FamilySystem {
     let moveSpeed = 0;
     if (cat.petTimer > 0) {
       cat.petTimer = Math.max(0, cat.petTimer - dt);
-      // Maine Coon dramatic belly-up flop vs Russian Blue affectionate head-tilt!
+      // Jelly playful belly-up roll vs Broccoli sweet affectionate head-tilt!
       const p = Math.sin(Math.min(1, cat.petTimer / 0.4) * Math.PI * 0.5);
-      if (isMaine) {
-        cat.bodyPivot.rotation.z = THREE.MathUtils.lerp(cat.bodyPivot.rotation.z, 2.25 * p, Math.min(1, dt * 10));
-        cat.headGroup.rotation.x = -0.25 * p;
+      if (isJelly) {
+        cat.bodyPivot.rotation.z = THREE.MathUtils.lerp(cat.bodyPivot.rotation.z, 2.20 * p, Math.min(1, dt * 10));
+        cat.headGroup.rotation.x = -0.22 * p;
       } else {
         cat.headGroup.rotation.z = 0.28 * Math.sin(time * 5.0) * p;
         cat.headGroup.rotation.x = -0.20 * p;
@@ -1010,7 +1323,7 @@ export class FamilySystem {
       cat.bodyPivot.position.y = THREE.MathUtils.lerp(cat.bodyPivot.position.y, 0, Math.min(1, dt * 10));
     }
 
-    cat.tailPivot.rotation.y = Math.sin(time * (cat.petTimer > 0 ? 7.5 : 2.8) + (isMaine ? 1.2 : 0)) * 0.36;
+    cat.tailPivot.rotation.y = Math.sin(time * (cat.petTimer > 0 ? 7.5 : 2.8) + (isJelly ? 1.2 : 0)) * 0.36;
     cat.tailPivot.rotation.x = 0.15 + Math.cos(time * 2.1) * 0.08;
 
     // Fade nameplate softly so it only appears when close (`< 9m`)
@@ -1087,15 +1400,20 @@ export class FamilySystem {
         h.armR.rotation.z = -0.18 + Math.cos(time * 2.4) * 0.10;
       }
 
-      const blink = Math.sin(time * 0.9) > 0.985 ? 0.12 : 1.25;
-      h.eyeL.scale.y = blink;
-      h.eyeR.scale.y = blink;
+      const isBlinking = Math.sin(time * 0.9) > 0.985;
+      if (h.faceShellMat) {
+        const wantMap = isBlinking ? h.faceTexBlink : h.faceTexOpen;
+        if (h.faceShellMat.map !== wantMap) {
+          h.faceShellMat.map = wantMap;
+          h.faceShellMat.needsUpdate = true;
+        }
+      }
       h.labelSprite.material.opacity = 1.0 - THREE.MathUtils.smoothstep(dist, 7.0, 18.0);
     }
 
-    // 3. Update Russian Blue & Maine Coon Cats
-    this._updateCat(this.russianBlue, dt, playerPos, charYaw, time);
-    this._updateCat(this.maineCoon, dt, playerPos, charYaw, time);
+    // 3. Update Broccoli & Jelly Cats
+    this._updateCat(this.broccoli, dt, playerPos, charYaw, time);
+    this._updateCat(this.jelly, dt, playerPos, charYaw, time);
 
     // 4. Update Floating Hearts
     for (let i = this.floatingHearts.length - 1; i >= 0; i--) {

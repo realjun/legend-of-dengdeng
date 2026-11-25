@@ -222,7 +222,7 @@ export class SkyIslandSystem {
       lockHint: '敲响北侧的「云端同心钟」[F]，让清脆钟声回荡天际即可解封',
       title: '心愿星徽 ⑤ · 云端誓言之星',
       message:
-        '「给登登的第五颗星：站在云端俯瞰整片山谷，星光木屋、小蓝与大福都在脚下温柔闪耀——愿你永远自在乘风，而我永远是托起你的那股暖流。」',
+        '「给登登的第五颗星：站在云端俯瞰整片山谷，星光木屋、Broccoli 与 Jelly 都在脚下温柔闪耀——愿你永远自在乘风，而我永远是托起你的那股暖流。」',
     });
 
     // 6. Floating Sakura Petals drifting gently around the Sky Island
@@ -360,7 +360,7 @@ export class SkyIslandSystem {
       speaker: '云端同心钟',
       text: firstTime
         ? '「当——♪」清越的钟声穿过云海与双子山！身后的『云端誓言之星』宝箱封印已解开！'
-        : '「当——♪」钟声载着给登登的心愿飞向远方天际，小蓝与大福也仰起头开心地眯起了眼睛～',
+        : '「当——♪」钟声载着给登登的心愿飞向远方天际，Broccoli 与 Jelly 也仰起头开心地眯起了眼睛～',
     };
   }
 

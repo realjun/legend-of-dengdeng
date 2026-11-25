@@ -1,9 +1,9 @@
 // Vintage Keepsake Polaroid Camera for Dengdeng ("登登专属拍立得纪念相机")
 
 const POLAROID_CAPTIONS = [
-  '与老公、小蓝、大福共度的奇幻山谷时光 ♡',
+  '与老公、Broccoli、Jelly 共度的奇幻山谷时光 ♡',
   '致我最爱的登登：愿你眼里的星光永远明亮如初 ✦',
-  '清风拂过草海，小蓝与大福摇着尾巴跟在登登身旁～',
+  '清风拂过草海，Broccoli 与 Jelly 摇着尾巴跟在登登身旁～',
   '把这一刻的晴空、樱花与欢笑装进永恒的相册里 ♪',
   '无论在现实还是童话世界，我们一家四口永远在一起！',
 ];
@@ -144,7 +144,7 @@ export class PolaroidCamera {
     ctx.lineWidth = 2;
     ctx.strokeRect(padX, padTop, photoW, photoH);
 
-    // 3. Cute Twin Cat-Paw Stamps (Emerald Russian Blue + Amber Maine Coon)
+    // 3. Cute Twin Cat-Paw Stamps (Sage-Slate Broccoli + Toasted-Apricot Jelly)
     const drawPaw = (cx, cy, col) => {
       ctx.fillStyle = col;
       ctx.beginPath();
@@ -161,8 +161,8 @@ export class PolaroidCamera {
         ctx.fill();
       }
     };
-    drawPaw(76, 646, '#4cc995');
-    drawPaw(112, 652, '#e8ac46');
+    drawPaw(76, 646, '#729e68');
+    drawPaw(112, 652, '#e5994c');
 
     // 4. Region Title, Romantic Caption & Star Emblem Stamp
     const regionTitle =
