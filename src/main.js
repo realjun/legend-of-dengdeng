@@ -5,6 +5,7 @@ import { VrmDengdeng } from './player/VrmDengdeng.js';
 import { SoundEngine } from './audio/SoundEngine.js';
 import { CombatEffects } from './effects/CombatEffects.js';
 import { FamilySystem } from './entities/FamilySystem.js';
+import { MonsterSystem } from './entities/MonsterSystem.js';
 
 class HyruleExplorationApp {
   constructor() {
@@ -48,12 +49,13 @@ class HyruleExplorationApp {
     const gpuName = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '' : '';
     const isSoftware = /swiftshader|llvmpipe|software/i.test(gpuName);
 
-    // World, Character, Family Homestead & Martial Arts VFX
+    // World, Character, Family Homestead, Monsters & Martial Arts VFX
     this.paused = false;
     this.world = new HyruleWorld(this.scene, { isSoftware });
-    this.family = new FamilySystem(this.scene, this.world);
-    this.dengdeng = new VrmDengdeng(this.scene);
     this.combatEffects = new CombatEffects(this.scene);
+    this.family = new FamilySystem(this.scene, this.world);
+    this.monsters = new MonsterSystem(this.scene, this.world, this.combatEffects, this.sound);
+    this.dengdeng = new VrmDengdeng(this.scene);
 
     // Spawn at Scenic Awakening Overlook along the Flagstone Trail
     const startZ = 21.5;
@@ -558,6 +560,9 @@ class HyruleExplorationApp {
 
   _updateInteractionPrompt() {
     const inter = this.family.getNearestInteraction(this.playerPos);
+    if (inter && inter.type === 'cat' && this.monsters.fishTreats > 0) {
+      inter.label = `[F] 撸${inter.cat.name} · 投喂小鱼干(余${this.monsters.fishTreats})`;
+    }
     this.activeInteraction = inter;
     if (this.interactPrompt) {
       if (inter) {
@@ -571,7 +576,19 @@ class HyruleExplorationApp {
 
   _executeActiveInteraction() {
     if (!this.activeInteraction) return;
+    const feedingTreat =
+      this.activeInteraction.type === 'cat' && this.monsters.fishTreats > 0;
     const res = this.family.triggerInteraction(this.activeInteraction, this.sound);
+    if (feedingTreat && res) {
+      this.monsters.fishTreats--;
+      const cat = this.activeInteraction.cat;
+      this.family.spawnFloatingHeart(
+        new THREE.Vector3(cat.pos.x, cat.pos.y + 0.55, cat.pos.z),
+        '#ffe066',
+        5
+      );
+      res.text = `「投喂香香小鱼干成功！」${res.text}`;
+    }
     if (res && res.text) {
       this.showStoryToast(res.speaker, res.text);
     }
@@ -665,6 +682,7 @@ class HyruleExplorationApp {
         this.camImpulse.set(0, -0.055, 0);
       } else if (ev.type === 'parry_impact') {
         this.sound.shieldParry();
+        const parried = this.monsters.handlePlayerParry(this.playerPos, this.charYaw);
         if (!this.dengdeng.getShieldWorldCenter(this._fxPos)) {
           this._fxPos.set(
             this.playerPos.x + fwdX * 0.45,
@@ -674,15 +692,15 @@ class HyruleExplorationApp {
         }
         this._fxNormal.set(fwdX, 0.08, fwdZ).normalize();
         this.combatEffects.spawnShockwave(this._fxPos, {
-          color: '#8af6ff',
+          color: parried ? '#ffe86b' : '#8af6ff',
           startScale: 0.16,
-          endScale: 1.38,
-          duration: 0.30,
+          endScale: parried ? 1.95 : 1.38,
+          duration: 0.32,
           normal: this._fxNormal,
         });
-        this.combatEffects.spawnSparks(this._fxPos, '#fff099', 16);
+        this.combatEffects.spawnSparks(this._fxPos, '#fff099', parried ? 24 : 16);
         this.world.triggerGrassWave(this._fxPos.x, this._fxPos.z, 2.7, 0.92);
-        this.camImpulse.set(-fwdX * 0.03, 0.018, -fwdZ * 0.03);
+        this.camImpulse.set(-fwdX * 0.035, 0.02, -fwdZ * 0.035);
       }
     }
   }
@@ -754,9 +772,10 @@ class HyruleExplorationApp {
     this._updateCamera(dt);
     this.world.update(dt, this.playerPos);
     this.family.update(dt, this.playerPos, this.charYaw);
-    this._updateInteractionPrompt();
     this.dengdeng.update(dt, locomotion, this.camera.position);
     this._processCombatEvents();
+    this.monsters.update(dt, this.playerPos, this.charYaw, this.dengdeng, this.family, this.velXZ);
+    this._updateInteractionPrompt();
 
     const mods = this.dengdeng.getCombatLocomotionModifiers();
     const trailGold = this.family.cookingBuffTimer > 0 ? Math.max(0.55, mods.trailGolden) : mods.trailGolden;
