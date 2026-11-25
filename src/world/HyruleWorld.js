@@ -142,6 +142,13 @@ export class HyruleWorld {
       h = THREE.MathUtils.lerp(h, 5.8, t * t * 0.88);
     }
 
+    // Starlight Blossom Cottage Sunny Terrace around (34, 26)
+    const dCottage = Math.hypot(x - 34, z - 26);
+    if (dCottage < 17.5) {
+      const t = Math.cos((dCottage / 17.5) * Math.PI * 0.5);
+      h = THREE.MathUtils.lerp(h, 4.65, Math.min(1, t * t * 1.15));
+    }
+
     // Gentle outer rolling foothills (never blocking the vast BotW sky & distant peaks!)
     const r = Math.hypot(x, z);
     if (r > 95) {
@@ -655,6 +662,12 @@ export class HyruleWorld {
       '#d48324',
       '#99511b',
     ]);
+    const sakuraMat = createGhibliFoliageMaterial(this.sharedUniforms, [
+      '#ffe4ef',
+      '#ffb2cd',
+      '#e57ca3',
+      '#a8486f',
+    ]);
 
     const barkMat = new THREE.MeshStandardMaterial({ color: 0x61442e, roughness: 0.92 });
     const whiteBarkMat = new THREE.MeshStandardMaterial({ color: 0xd8d2c5, roughness: 0.88 });
@@ -673,9 +686,14 @@ export class HyruleWorld {
       { x: 18.5, z: -31.5, s: 1.35, kind: 'ginkgo' },
       { x: 29.5, z: -32.0, s: 1.45, kind: 'ginkgo' },
       { x: 24.5, z: -41.5, s: 1.28, kind: 'ginkgo' },
+      // Starlight Blossom Cottage Sakura Grove!
+      { x: 25.5, z: 19.2, s: 1.22, kind: 'sakura' },
+      { x: 41.5, z: 20.5, s: 1.32, kind: 'sakura' },
+      { x: 42.2, z: 32.5, s: 1.25, kind: 'sakura' },
+      { x: 26.8, z: 33.8, s: 1.16, kind: 'sakura' },
       // Scenic Valley & Hillside Groves
       { x: -34, z: 32, s: 1.3, kind: 'oak' },
-      { x: 32, z: 28, s: 1.2, kind: 'birch' },
+      { x: 32, z: 42, s: 1.2, kind: 'birch' },
       { x: -42, z: -8, s: 1.35, kind: 'oak' },
       { x: 44, z: -6, s: 1.25, kind: 'oak' },
       { x: -26, z: -42, s: 1.3, kind: 'birch' },
@@ -686,7 +704,7 @@ export class HyruleWorld {
       { x: 6, z: 48, s: 1.25, kind: 'oak' },
     ];
 
-    const buckets = { oak: [], birch: [], ginkgo: [] };
+    const buckets = { oak: [], birch: [], ginkgo: [], sakura: [] };
 
     treeSpecs.forEach((t, idx) => {
       const ty = this.getTerrainHeight(t.x, t.z);
@@ -737,7 +755,7 @@ export class HyruleWorld {
 
     const shadowProxyGeo = new THREE.IcosahedronGeometry(1.85, 1);
     const shadowProxyMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-    const allCrowns = [...buckets.oak, ...buckets.birch, ...buckets.ginkgo];
+    const allCrowns = [...buckets.oak, ...buckets.birch, ...buckets.ginkgo, ...buckets.sakura];
     const shadowInst = new THREE.InstancedMesh(shadowProxyGeo, shadowProxyMat, allCrowns.length);
     shadowInst.castShadow = true;
     shadowInst.frustumCulled = false;
@@ -773,6 +791,7 @@ export class HyruleWorld {
     buildFoliageInstances(buckets.oak, oakMat);
     buildFoliageInstances(buckets.birch, birchMat);
     buildFoliageInstances(buckets.ginkgo, ginkgoMat);
+    buildFoliageInstances(buckets.sakura, sakuraMat);
   }
 
   _buildLushMeadowGrassAndFlowers() {
@@ -830,8 +849,9 @@ export class HyruleWorld {
       const rx = this.getRoadX(gz);
       if (Math.abs(gx - rx) < 1.35 + Math.random() * 0.65) continue;
 
-      // Leave stone sanctuary dais clear
+      // Leave stone sanctuary dais & Starlight Cottage courtyard clear
       if (Math.hypot(gx - 24, gz + 34) < 4.5) continue;
+      if (Math.hypot(gx - 34, gz - 26) < 7.2) continue;
 
       dummy.position.set(gx, gy - 0.02, gz);
       dummy.rotation.y = Math.random() * Math.PI * 2;

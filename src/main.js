@@ -4,6 +4,7 @@ import { HyruleWorld } from './world/HyruleWorld.js';
 import { VrmDengdeng } from './player/VrmDengdeng.js';
 import { SoundEngine } from './audio/SoundEngine.js';
 import { CombatEffects } from './effects/CombatEffects.js';
+import { FamilySystem } from './entities/FamilySystem.js';
 
 class HyruleExplorationApp {
   constructor() {
@@ -15,6 +16,10 @@ class HyruleExplorationApp {
     this.whisperEn = document.getElementById('whisper-en');
     this.whisperZh = document.getElementById('whisper-zh');
     this.walkHint = document.getElementById('walk-hint');
+    this.interactPrompt = document.getElementById('interact-prompt');
+    this.storyToast = document.getElementById('story-toast');
+    this.storySpeaker = document.getElementById('story-speaker');
+    this.storyText = document.getElementById('story-text');
 
     this.ready = false;
     this.sound = new SoundEngine();
@@ -43,9 +48,10 @@ class HyruleExplorationApp {
     const gpuName = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '' : '';
     const isSoftware = /swiftshader|llvmpipe|software/i.test(gpuName);
 
-    // World, Character & Martial Arts VFX
+    // World, Character, Family Homestead & Martial Arts VFX
     this.paused = false;
     this.world = new HyruleWorld(this.scene, { isSoftware });
+    this.family = new FamilySystem(this.scene, this.world);
     this.dengdeng = new VrmDengdeng(this.scene);
     this.combatEffects = new CombatEffects(this.scene);
 
@@ -88,9 +94,11 @@ class HyruleExplorationApp {
     this._fxPos = new THREE.Vector3();
     this._fxNormal = new THREE.Vector3();
 
-    // Region Discovery Tracking
+    // Region Discovery & Story Toast Tracking
     this.currentRegion = '';
     this.whisperTimer = null;
+    this.storyTimer = null;
+    this.activeInteraction = null;
 
     this._bindEvents();
     this.lastTime = performance.now();
@@ -111,9 +119,11 @@ class HyruleExplorationApp {
       this.dengdeng.root.position.copy(this.playerPos);
       this.dengdeng.root.rotation.y = this.charYaw;
       this.dengdeng.resetSpringBones();
+      this.family.teleportCompanionsNear(this.playerPos, this.charYaw);
 
       // Warm up initial pose before unveiling
       this.world.update(0.016, this.playerPos);
+      this.family.update(0.016, this.playerPos, this.charYaw);
       this._updateCamera(1.0);
       this.dengdeng.update(0.016, { speed: 0, grounded: true, velY: 0 }, this.camera.position);
       this.renderer.render(this.scene, this.camera);
@@ -130,6 +140,17 @@ class HyruleExplorationApp {
         this.loadingLabel.textContent = `加载出错：${err.message || err}`;
       }
     }
+  }
+
+  showStoryToast(speaker, text, durationMs = 4800) {
+    if (!this.storyToast) return;
+    this.storySpeaker.textContent = speaker;
+    this.storyText.textContent = text;
+    this.storyToast.classList.remove('hidden');
+    if (this.storyTimer) clearTimeout(this.storyTimer);
+    this.storyTimer = setTimeout(() => {
+      this.storyToast.classList.add('hidden');
+    }, durationMs);
   }
 
   _setLoadingProgress(ratio, label) {
@@ -183,8 +204,18 @@ class HyruleExplorationApp {
         this.dengdeng.triggerShieldParry(this.grounded);
       } else if (e.code === 'KeyR') {
         this.dengdeng.toggleSheathe();
+      } else if (e.code === 'KeyF') {
+        this._executeActiveInteraction();
       }
     });
+
+    if (this.interactPrompt) {
+      this.interactPrompt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        unlockAudio();
+        this._executeActiveInteraction();
+      });
+    }
 
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code);
@@ -301,6 +332,15 @@ class HyruleExplorationApp {
         this.camTargetYaw = this._wrapAngle(this.charYaw - Math.PI + 0.08);
         this.camTargetPitch = 0.15;
         this.camTargetDist = 3.55;
+      });
+    }
+
+    const btnHome = document.getElementById('btn-home');
+    if (btnHome) {
+      btnHome.addEventListener('click', () => {
+        unlockAudio();
+        this.teleport(27.8, 23.6, 0.92);
+        this.setCameraView({ yaw: -2.18, pitch: 0.14, dist: 4.1, immediate: false });
       });
     }
   }
@@ -491,7 +531,11 @@ class HyruleExplorationApp {
     let en = '';
     let zh = '';
 
-    if (Math.hypot(x - 24, z + 34) < 14) {
+    if (Math.hypot(x - 32, z - 25) < 13.5) {
+      region = 'cottage';
+      en = 'STARLIGHT BLOSSOM COTTAGE';
+      zh = '星光樱花木屋 · 我们的家';
+    } else if (Math.hypot(x - 24, z + 34) < 14) {
       region = 'ginkgo';
       en = 'GOLDEN GINKGO SANCTUARY';
       zh = '黄金银杏圣坛';
@@ -509,6 +553,27 @@ class HyruleExplorationApp {
       this.currentRegion = region;
       this._showRegionWhisper(en, zh);
       this.sound.discoveryFanfare();
+    }
+  }
+
+  _updateInteractionPrompt() {
+    const inter = this.family.getNearestInteraction(this.playerPos);
+    this.activeInteraction = inter;
+    if (this.interactPrompt) {
+      if (inter) {
+        this.interactPrompt.textContent = inter.label;
+        this.interactPrompt.classList.remove('hidden');
+      } else {
+        this.interactPrompt.classList.add('hidden');
+      }
+    }
+  }
+
+  _executeActiveInteraction() {
+    if (!this.activeInteraction) return;
+    const res = this.family.triggerInteraction(this.activeInteraction, this.sound);
+    if (res && res.text) {
+      this.showStoryToast(res.speaker, res.text);
     }
   }
 
@@ -530,6 +595,7 @@ class HyruleExplorationApp {
       } else if (ev.type === 'sword_swing') {
         this.sound.swordSwing(ev.combo, surface === 'grass' && this.grounded);
         this.combatEffects.resetTrailContinuity();
+        this.family.onPlayerSlash();
       } else if (ev.type === 'slash_wave') {
         const sx = this.playerPos.x + fwdX * 1.05;
         const sz = this.playerPos.z + fwdZ * 1.05;
@@ -540,6 +606,10 @@ class HyruleExplorationApp {
           this.combatEffects.spawnGrassClippings(this._fxPos, ev.finisher ? 20 : 10);
         } else if (surface === 'stone') {
           this.combatEffects.spawnSparks(this._fxPos, '#ffe484', ev.finisher ? 12 : 6);
+        }
+
+        if (this.family.cookingBuffTimer > 0) {
+          this.combatEffects.spawnSparks(this._fxPos, '#ff9ebb', 6);
         }
 
         if (ev.finisher) {
@@ -559,6 +629,7 @@ class HyruleExplorationApp {
       } else if (ev.type === 'spin_release') {
         this.sound.spinAttackRelease();
         this.combatEffects.resetTrailContinuity();
+        this.family.onPlayerSlash();
       } else if (ev.type === 'spin_wave') {
         this.world.triggerGrassWave(this.playerPos.x, this.playerPos.z, ev.radius, ev.strength);
         this._fxPos.set(this.playerPos.x, this.playerPos.y + 0.12, this.playerPos.z);
@@ -674,6 +745,7 @@ class HyruleExplorationApp {
     this.dengdeng.root.position.copy(this.playerPos);
     this.dengdeng.root.rotation.y = this.charYaw;
     this.dengdeng.resetSpringBones();
+    this.family.teleportCompanionsNear(this.playerPos, this.charYaw);
     this._updateCamera(1.0);
   }
 
@@ -681,16 +753,19 @@ class HyruleExplorationApp {
     const locomotion = this._updateLocomotion(dt);
     this._updateCamera(dt);
     this.world.update(dt, this.playerPos);
+    this.family.update(dt, this.playerPos, this.charYaw);
+    this._updateInteractionPrompt();
     this.dengdeng.update(dt, locomotion, this.camera.position);
     this._processCombatEvents();
 
     const mods = this.dengdeng.getCombatLocomotionModifiers();
+    const trailGold = this.family.cookingBuffTimer > 0 ? Math.max(0.55, mods.trailGolden) : mods.trailGolden;
     if (this.dengdeng.getBladeWorldSegment(this._bladeBase, this._bladeTip)) {
       this.combatEffects.pushBladeSample(
         this._bladeBase,
         this._bladeTip,
         mods.trailActive,
-        mods.trailGolden
+        trailGold
       );
     } else {
       this.combatEffects.resetTrailContinuity();

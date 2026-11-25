@@ -231,6 +231,37 @@ export class SoundEngine {
     this.playTone(110, 0.45, 'sawtooth', 0.28, 0, 36);
   }
 
+  catPurr(breed = 'russian') {
+    if (!this.ctx || !this.enabled) return;
+    if (breed === 'maine') {
+      // Iconic Maine Coon musical trill ("brrr-up~!") + deep warm rumble purr!
+      [340, 415, 510, 620].forEach((f, i) => {
+        this.playTone(f, 0.09, 'triangle', 0.14, i * 0.042, f * 1.12);
+      });
+      for (let p = 0; p < 6; p++) {
+        this.playTone(68 + (p % 2) * 8, 0.085, 'sine', 0.11, 0.20 + p * 0.075);
+      }
+    } else {
+      // Delicate sweet Russian Blue melodic meow + velvet purr
+      this.playTone(660, 0.16, 'sine', 0.15, 0, 880);
+      this.playTone(880, 0.22, 'triangle', 0.12, 0.11, 590);
+      for (let p = 0; p < 5; p++) {
+        this.playTone(84 + (p % 2) * 10, 0.075, 'sine', 0.09, 0.28 + p * 0.07);
+      }
+    }
+  }
+
+  talkGreeting() {
+    this.playTone(523.25, 0.14, 'triangle', 0.14, 0);
+    this.playTone(659.25, 0.18, 'sine', 0.15, 0.07);
+    this.playTone(783.99, 0.24, 'sine', 0.14, 0.14);
+  }
+
+  crystalChime(freq = 523.25) {
+    this.playTone(freq, 0.65, 'sine', 0.22, 0);
+    this.playTone(freq * 2, 0.42, 'triangle', 0.09, 0.015);
+  }
+
   footstep(surface = 'grass') {
     if (!this.ctx || !this.enabled) return;
     if (surface === 'wood') {

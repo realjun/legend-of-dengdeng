@@ -44,11 +44,22 @@
       <span class="atmo-sep"></span>
       <button class="atmo-btn" id="btn-portrait" title="切换英杰登登近景写真视角">近景写真</button>
       <button class="atmo-btn" id="btn-vista" title="切换海拉鲁原野远景漫步视角">原野远景</button>
+      <span class="atmo-sep"></span>
+      <button class="atmo-btn" id="btn-home" title="回到星光樱花木屋与老公和两只猫咪团聚">回家看看</button>
+    </div>
+
+    <!-- Contextual Interaction Pill (F key or click) -->
+    <button id="interact-prompt" class="hidden" type="button"></button>
+
+    <!-- Warm Story / Family Dialogue Toast -->
+    <div id="story-toast" class="hidden" aria-live="polite">
+      <div class="story-speaker" id="story-speaker">老公</div>
+      <div class="story-text" id="story-text"></div>
     </div>
 
     <!-- Subtle Bottom-Center Locomotion & Martial Arts Whisper -->
     <div id="walk-hint">
-      WASD 漫步 · Shift 奔跑 · Space 跳跃 · J/左键 挥剑连招(长按J回旋斩) · K/右键 举盾 · E/L 盾反 · R 收拔剑
+      WASD 漫步 · Shift 奔跑 · Space 跳跃 · J/左键 挥剑(长按J回旋斩) · K/右键 举盾 · E 盾反 · F 互动撸猫
     </div>
 
     <script type="module" src="/src/main.js"></script>
