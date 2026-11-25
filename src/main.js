@@ -12,6 +12,7 @@ import { SkyIslandSystem } from './world/SkyIslandSystem.js';
 import { CelebrationSystem } from './effects/CelebrationSystem.js';
 import { AdventureJournal } from './ui/AdventureJournal.js';
 import { PolaroidCamera } from './ui/PolaroidCamera.js';
+import { Minimap } from './ui/Minimap.js';
 import { PlayfulActivities } from './world/PlayfulActivities.js';
 
 class HyruleExplorationApp {
@@ -105,6 +106,7 @@ class HyruleExplorationApp {
     this.dengdeng = new VrmDengdeng(this.scene);
     this.journal = new AdventureJournal(this);
     this.polaroid = new PolaroidCamera(this);
+    this.minimap = new Minimap(this);
 
     // Spawn at Scenic Awakening Overlook along the Flagstone Trail
     const startZ = 21.5;
@@ -183,6 +185,7 @@ class HyruleExplorationApp {
       this.renderer.render(this.scene, this.camera);
 
       this.ready = true;
+      this.minimap.update();
       this.loadingVeil.classList.add('fade-out');
       this._showRegionWhisper('HYRULE FIELD', '海拉鲁原野 · 静谧镜湖');
 
@@ -272,6 +275,8 @@ class HyruleExplorationApp {
         this._executeActiveInteraction();
       } else if (e.code === 'KeyM') {
         this.journal.toggleDrawer();
+      } else if (e.code === 'KeyN') {
+        this.minimap.toggleOrientation();
       } else if (e.code === 'KeyC') {
         this.toggleShieldSurf();
       } else if (e.code === 'Space') {
@@ -1065,6 +1070,7 @@ class HyruleExplorationApp {
     this.dengdeng.resetSpringBones();
     this.family.teleportCompanionsNear(this.playerPos, this.charYaw);
     this._updateCamera(1.0);
+    this.minimap.update();
   }
 
   stepSimulation(dt = 1 / 30) {
@@ -1081,6 +1087,7 @@ class HyruleExplorationApp {
     this.puzzles.update(dt, this.playerPos, this.charYaw, this.dengdeng, this.monsters.defeatedCount);
     this.celebration.update(dt, this.playerPos, this.camYaw);
     this.journal.update();
+    this.minimap.update();
     this._updateInteractionPrompt();
 
     const mods = this.dengdeng.getCombatLocomotionModifiers();
