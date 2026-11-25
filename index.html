@@ -35,6 +35,48 @@
       <div class="whisper-rule"></div>
     </div>
 
+    <!-- Feather-Light Top-Left Adventure Journal & Keepsake HUD -->
+    <div id="journal-bar">
+      <span class="hud-chip" title="已收集的心愿星徽宝箱">★ 星徽 <b id="hud-star-count">0/5</b></span>
+      <span class="atmo-sep"></span>
+      <span class="hud-chip" title="可投喂小蓝与大福的小鱼干">🐟 鱼干 <b id="hud-fish-count">0</b></span>
+      <span class="hud-chip buff-chip hidden" id="hud-buff-badge" title="老公炖煮的暖心料理剑气增益生效中">🍲 暖心剑气</span>
+      <span class="atmo-sep"></span>
+      <button class="atmo-btn" id="btn-journal-toggle" type="button" title="打开登登的冒险手账与快速旅行明信片 (M)">📖 手账 [M]</button>
+    </div>
+
+    <!-- Collapsible Travel Postcards & Star Keepsake Drawer -->
+    <div id="journal-drawer" class="hidden">
+      <div class="jd-header">
+        <div>
+          <div class="jd-title">登登的奇幻冒险手账</div>
+          <div class="jd-sub">THE LEGEND OF DENGDENG · 专属纪念绘卷</div>
+        </div>
+        <button class="jd-close" id="btn-journal-close" type="button" aria-label="关闭手账">✕</button>
+      </div>
+
+      <div class="jd-section-label">✦ 五枚心愿星徽珍藏</div>
+      <div id="journal-star-list" class="jd-star-list"></div>
+
+      <div class="jd-section-label">✦ 明信片快速旅行（点击直达）</div>
+      <div id="journal-postcards" class="jd-postcard-grid"></div>
+
+      <button id="btn-trigger-celebration" class="jd-celebrate-btn" type="button">
+        ✨ 放飞漫天心愿孔明灯 · 点亮星夜烟花盛典
+      </button>
+    </div>
+
+    <!-- Romantic Sky-Lantern & Fireworks Dedication Plaque -->
+    <div id="dedication-card" class="hidden" aria-live="polite">
+      <button class="ded-close" id="btn-dedication-close" type="button" aria-label="收起寄语">✕</button>
+      <div class="ded-kicker">✦ TO MY BELOVED DENGDENG · 致我最爱的登登 ✦</div>
+      <div class="ded-poem">
+        愿这片为你而造的山谷，永远有清风、樱花与漫天星灯；<br />
+        愿小蓝的翡翠绿眸与大福的蓬松狮鬃常伴左右；<br />
+        无论飞越多少迷宫与云海，回头总有老公在星光木屋等你回家。
+      </div>
+    </div>
+
     <!-- Feather-Light Atmosphere & Framing Pill (Top-Right, unobtrusive) -->
     <div id="atmosphere-bar">
       <button class="atmo-btn" data-mood="dawn" title="晨曦微光">晨曦</button>
@@ -59,7 +101,7 @@
 
     <!-- Subtle Bottom-Center Locomotion & Martial Arts Whisper -->
     <div id="walk-hint">
-      WASD 漫步 · Shift 奔跑 · Space 跳跃(空中再按开星羽滑翔翼) · J/左键 挥剑(长按J回旋斩) · K/右键 举盾 · E 盾反 · F 互动
+      WASD 漫步 · Shift 奔跑 · Space 跳跃(空中再按开星羽滑翔翼) · J/左键 挥剑(长按J回旋斩) · K/右键 举盾 · E 盾反 · F 互动 · M 手账
     </div>
 
     <script type="module" src="/src/main.js"></script>

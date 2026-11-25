@@ -9,6 +9,8 @@ import { MonsterSystem } from './entities/MonsterSystem.js';
 import { ExpandedBiomes } from './world/ExpandedBiomes.js';
 import { PuzzleSystem } from './world/PuzzleSystem.js';
 import { SkyIslandSystem } from './world/SkyIslandSystem.js';
+import { CelebrationSystem } from './effects/CelebrationSystem.js';
+import { AdventureJournal } from './ui/AdventureJournal.js';
 
 class HyruleExplorationApp {
   constructor() {
@@ -52,7 +54,7 @@ class HyruleExplorationApp {
     const gpuName = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '' : '';
     const isSoftware = /swiftshader|llvmpipe|software/i.test(gpuName);
 
-    // World, Expanded Biomes, Puzzles, Sky Island, Family Homestead, Monsters & Martial Arts VFX
+    // World, Expanded Biomes, Puzzles, Sky Island, Celebration, Family Homestead, Monsters & Martial Arts VFX
     this.paused = false;
     this.world = new HyruleWorld(this.scene, { isSoftware });
     this.combatEffects = new CombatEffects(this.scene);
@@ -74,10 +76,17 @@ class HyruleExplorationApp {
       this.combatEffects,
       this.sound
     );
-    this.puzzles.onStarCollected = (_count, _total, chest) => {
+    this.celebration = new CelebrationSystem(this.scene, this.world, this.family, this.sound);
+    this.puzzles.onStarCollected = (count, total, chest) => {
       if (chest.id === 'maze_chest') this.biomes._mazeChestOpened = true;
+      if (count >= total) {
+        setTimeout(() => {
+          this.triggerGrandCelebration();
+        }, 900);
+      }
     };
     this.dengdeng = new VrmDengdeng(this.scene);
+    this.journal = new AdventureJournal(this);
 
     // Spawn at Scenic Awakening Overlook along the Flagstone Trail
     const startZ = 21.5;
@@ -231,6 +240,8 @@ class HyruleExplorationApp {
         this.dengdeng.toggleSheathe();
       } else if (e.code === 'KeyF') {
         this._executeActiveInteraction();
+      } else if (e.code === 'KeyM') {
+        this.journal.toggleDrawer();
       } else if (e.code === 'Space') {
         if (!this.grounded) {
           this.setGliding(!this.gliding);
@@ -341,6 +352,10 @@ class HyruleExplorationApp {
       btn.addEventListener('click', () => {
         unlockAudio();
         const mood = btn.getAttribute('data-mood');
+        if (mood !== 'night' && this.celebration.active) {
+          this.celebration.stopCelebration();
+          this.journal.hideDedication();
+        }
         this.setMood(mood);
       });
     });
@@ -374,6 +389,16 @@ class HyruleExplorationApp {
         this.setCameraView({ yaw: -2.18, pitch: 0.14, dist: 4.1, immediate: false });
       });
     }
+  }
+
+  triggerGrandCelebration() {
+    this.celebration.startCelebration(this.playerPos, (m) => this.setMood(m), this.camYaw);
+    this.journal.showDedication();
+    this.showStoryToast(
+      '老公 & 小蓝 & 大福',
+      '「登登看天上——！漫天心愿孔明灯和星夜烟花都为你点亮啦，永远快乐、永远被爱包围！」',
+      6800
+    );
   }
 
   setMood(mood) {
@@ -711,6 +736,7 @@ class HyruleExplorationApp {
     }
     const feedingTreat =
       this.activeInteraction.type === 'cat' && this.monsters.fishTreats > 0;
+    const isHusband = this.activeInteraction.type === 'husband';
     const res = this.family.triggerInteraction(this.activeInteraction, this.sound);
     if (feedingTreat && res) {
       this.monsters.fishTreats--;
@@ -721,6 +747,10 @@ class HyruleExplorationApp {
         5
       );
       res.text = `「投喂香香小鱼干成功！」${res.text}`;
+    }
+    if (isHusband && this.puzzles.collectedStars >= this.puzzles.totalStars && !this.celebration.active) {
+      this.triggerGrandCelebration();
+      return;
     }
     if (res && res.text) {
       this.showStoryToast(res.speaker, res.text);
@@ -919,6 +949,8 @@ class HyruleExplorationApp {
     this._processCombatEvents();
     this.monsters.update(dt, this.playerPos, this.charYaw, this.dengdeng, this.family, this.velXZ);
     this.puzzles.update(dt, this.playerPos, this.charYaw, this.dengdeng, this.monsters.defeatedCount);
+    this.celebration.update(dt, this.playerPos, this.camYaw);
+    this.journal.update();
     this._updateInteractionPrompt();
 
     const mods = this.dengdeng.getCombatLocomotionModifiers();

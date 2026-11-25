@@ -262,6 +262,40 @@ export class SoundEngine {
     this.playTone(freq * 2, 0.42, 'triangle', 0.09, 0.015);
   }
 
+  fireworkPop() {
+    this.playNoise(0.28, 0.14, 920);
+    this.playTone(180, 0.22, 'sine', 0.11, 0, 68);
+    const sparkle = [1046.5, 1318.5, 1567.98, 2093.0];
+    const f = sparkle[Math.floor(Math.random() * sparkle.length)];
+    this.playTone(f, 0.48, 'sine', 0.08, 0.05);
+  }
+
+  playLoveSerenade() {
+    // Tender 16-note celestial music-box serenade composed for Dengdeng
+    const notes = [
+      [523.25, 0.0],
+      [659.25, 0.26],
+      [783.99, 0.52],
+      [987.77, 0.78],
+      [880.0, 1.18],
+      [783.99, 1.48],
+      [659.25, 1.78],
+      [587.33, 2.12],
+      [523.25, 2.55],
+      [659.25, 2.82],
+      [880.0, 3.08],
+      [1046.5, 3.40],
+      [987.77, 3.85],
+      [783.99, 4.18],
+      [1046.5, 4.55],
+      [1318.5, 4.95],
+    ];
+    for (const [f, d] of notes) {
+      this.playTone(f, 0.88, 'sine', 0.15, d);
+      this.playTone(f * 2, 0.45, 'triangle', 0.045, d + 0.015);
+    }
+  }
+
   footstep(surface = 'grass') {
     if (!this.ctx || !this.enabled) return;
     if (surface === 'wood') {
