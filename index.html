@@ -87,7 +87,20 @@
       <button class="atmo-btn" id="btn-portrait" title="切换英杰登登近景写真视角">近景写真</button>
       <button class="atmo-btn" id="btn-vista" title="切换海拉鲁原野远景漫步视角">原野远景</button>
       <span class="atmo-sep"></span>
+      <button class="atmo-btn" id="btn-polaroid" title="拍下登登与家人的拍立得纪念卡片 (P)">📷 拍立得</button>
       <button class="atmo-btn" id="btn-home" title="回到星光樱花木屋与老公和两只猫咪团聚">回家看看</button>
+    </div>
+
+    <!-- Polaroid Shutter Flash & Keepsake Preview Modal -->
+    <div id="polaroid-flash"></div>
+    <div id="polaroid-modal" class="hidden" role="dialog" aria-label="拍立得纪念照片">
+      <div class="polaroid-frame-wrap">
+        <img id="polaroid-preview-img" alt="登登的拍立得纪念照" />
+        <div class="polaroid-actions">
+          <button id="btn-polaroid-save" class="polaroid-btn primary" type="button">💾 保存这张拍立得</button>
+          <button id="btn-polaroid-close" class="polaroid-btn" type="button">✕ 继续漫步</button>
+        </div>
+      </div>
     </div>
 
     <!-- Contextual Interaction Pill (F key or click) -->
@@ -101,7 +114,7 @@
 
     <!-- Subtle Bottom-Center Locomotion & Martial Arts Whisper -->
     <div id="walk-hint">
-      WASD 漫步 · Shift 奔跑 · Space 跳跃/滑翔翼 · C 踩盾滑草 · J/左键 挥剑 · K/右键 举盾 · E 盾反 · F 互动 · M 手账
+      WASD 漫步 · Shift 奔跑 · Space 跳跃/滑翔翼 · C 踩盾滑草 · J 挥剑 · K 举盾 · E 盾反 · F 互动 · M 手账 · P 拍照
     </div>
 
     <script type="module" src="/src/main.js"></script>

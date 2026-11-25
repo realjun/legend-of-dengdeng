@@ -296,6 +296,13 @@ export class SoundEngine {
     }
   }
 
+  cameraShutter() {
+    this.playNoise(0.055, 0.22, 2600);
+    this.playNoise(0.045, 0.16, 1400);
+    this.playTone(1174.66, 0.18, 'sine', 0.12, 0.04);
+    this.playTone(1567.98, 0.28, 'triangle', 0.10, 0.10);
+  }
+
   footstep(surface = 'grass') {
     if (!this.ctx || !this.enabled) return;
     if (surface === 'wood') {

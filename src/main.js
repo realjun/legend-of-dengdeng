@@ -11,6 +11,7 @@ import { PuzzleSystem } from './world/PuzzleSystem.js';
 import { SkyIslandSystem } from './world/SkyIslandSystem.js';
 import { CelebrationSystem } from './effects/CelebrationSystem.js';
 import { AdventureJournal } from './ui/AdventureJournal.js';
+import { PolaroidCamera } from './ui/PolaroidCamera.js';
 import { PlayfulActivities } from './world/PlayfulActivities.js';
 
 class HyruleExplorationApp {
@@ -103,6 +104,7 @@ class HyruleExplorationApp {
     };
     this.dengdeng = new VrmDengdeng(this.scene);
     this.journal = new AdventureJournal(this);
+    this.polaroid = new PolaroidCamera(this);
 
     // Spawn at Scenic Awakening Overlook along the Flagstone Trail
     const startZ = 21.5;
@@ -247,6 +249,16 @@ class HyruleExplorationApp {
       this.keys.add(e.code);
 
       if (!this.ready || !firstPress) return;
+      if (e.code === 'Escape') {
+        if (this.polaroid.isOpen()) this.polaroid.closeModal();
+        if (this.journal.drawerOpen) this.journal.toggleDrawer(false);
+        return;
+      }
+      if (e.code === 'KeyP') {
+        if (this.polaroid.isOpen()) this.polaroid.closeModal();
+        else this.polaroid.snapPhoto();
+        return;
+      }
       if (e.code === 'KeyJ') {
         this.jHoldTimer = 0.001;
         this.dengdeng.triggerSwordSlash(this.grounded);

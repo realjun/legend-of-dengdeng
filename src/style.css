@@ -560,3 +560,88 @@ body {
   letter-spacing: 0.06em;
   color: #fff8ee;
 }
+
+/* Polaroid Shutter Flash & Keepsake Preview Modal */
+#polaroid-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: #fffdf7;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+
+#polaroid-flash.active {
+  opacity: 0.78;
+  transition: none;
+}
+
+#polaroid-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 12, 20, 0.56);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity 0.28s ease;
+}
+
+#polaroid-modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.polaroid-frame-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  transform: rotate(-1.2deg);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#polaroid-modal.hidden .polaroid-frame-wrap {
+  transform: rotate(-4deg) scale(0.92);
+}
+
+#polaroid-preview-img {
+  width: min(560px, 88vw);
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.65);
+}
+
+.polaroid-actions {
+  display: flex;
+  gap: 12px;
+  transform: rotate(1.2deg);
+}
+
+.polaroid-btn {
+  appearance: none;
+  padding: 8px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(244, 222, 168, 0.45);
+  background: rgba(16, 24, 36, 0.85);
+  color: #fff8eb;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.polaroid-btn.primary {
+  background: linear-gradient(90deg, #b88244, #d4a656);
+  color: #fffdf8;
+  border-color: #ffe49c;
+}
+
+.polaroid-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
